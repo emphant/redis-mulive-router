@@ -2,35 +2,50 @@
 
 
 [[projects]]
-  branch = "master"
-  name = "github.com/chasex/redis-go-cluster"
+  name = "github.com/BurntSushi/toml"
   packages = ["."]
-  revision = "222d81891f1d3fa7cf8b5655020352c3e5b4ec0f"
-  source = "github.com/chasex/redis-go-cluster"
+  revision = "b26d9c308763d68093482582cea63d69be07a0f0"
+  version = "v0.3.0"
 
 [[projects]]
-  name = "github.com/emirpasic/gods"
+  name = "github.com/CodisLabs/codis"
   packages = [
-    "containers",
-    "lists",
-    "lists/arraylist",
-    "utils"
+    "pkg/utils/assert",
+    "pkg/utils/bytesize",
+    "pkg/utils/errors",
+    "pkg/utils/log",
+    "pkg/utils/math2",
+    "pkg/utils/sync2/atomic2",
+    "pkg/utils/timesize",
+    "pkg/utils/trace"
   ]
-  revision = "f6c17b524822278a87e3b3bd809fec33b51f5b46"
-  version = "v1.9.0"
+  revision = "9fde2809cca131e3da1a7e0920ea151029301fb4"
+  version = "3.2.2"
 
 [[projects]]
-  branch = "master"
   name = "github.com/garyburd/redigo"
   packages = [
     "internal",
     "redis"
   ]
-  revision = "569eae59ada904ea8db7a225c2b47165af08735a"
+  revision = "a69d19351219b6dd56f274f96d85a7014a2ec34e"
+  version = "v1.6.0"
+
+[[projects]]
+  name = "github.com/spinlock/jemalloc-go"
+  packages = ["."]
+  revision = "8b985c7ab89f3f0388caf49bbbaa6a156a9175b5"
+  version = "4.5.0"
+
+[[projects]]
+  branch = "master"
+  name = "golang.org/x/net"
+  packages = ["context"]
+  revision = "d11bb6cd8e3c4e60239c9cb20ef68586d74500d0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "32be76e5144cef11c85200b616891c9dbddfc9f3de36de6a345d82802bf574b9"
+  inputs-digest = "bb96e915501835238cf16c24bb561da541a75b9bb1135fc0bba0e6f1651b5377"
   solver-name = "gps-cdcl"
   solver-version = 1
