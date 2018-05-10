@@ -1,14 +1,14 @@
 // Copyright 2016 CodisLabs. All Rights Reserved.
 // Licensed under the MIT (MIT-LICENSE.txt) license.
 
-package proxy
+package pool
 
 import (
 	"sync"
 	"unsafe"
 
-	"github.com/CodisLabs/codis/pkg/proxy/redis"
-	"github.com/CodisLabs/codis/pkg/utils/sync2/atomic2"
+	"github.com/emphant/redis-mulive-router/pkg/pool/redis"
+	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
 )
 
 type Request struct {

@@ -7,9 +7,10 @@ import (
 	"net"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/bufio2"
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/unsafe2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/bufio2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/unsafe2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 )
 
 type Conn struct {
@@ -27,6 +28,7 @@ type Conn struct {
 func DialTimeout(addr string, timeout time.Duration, rbuf, wbuf int) (*Conn, error) {
 	c, err := net.DialTimeout("tcp", addr, timeout)
 	if err != nil {
+		log.Println("new Conn error")
 		return nil, errors.Trace(err)
 	}
 	return NewConn(c, rbuf, wbuf), nil

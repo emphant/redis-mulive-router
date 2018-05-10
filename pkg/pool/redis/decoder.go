@@ -8,8 +8,8 @@ import (
 	"io"
 	"strconv"
 
-	"github.com/CodisLabs/codis/pkg/utils/bufio2"
-	"github.com/CodisLabs/codis/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/bufio2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
 var (

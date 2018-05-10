@@ -1,12 +1,11 @@
 // Copyright 2016 CodisLabs. All Rights Reserved.
 // Licensed under the MIT (MIT-LICENSE.txt) license.
 
-package proxy
+package pool
 
 import (
 	"time"
-
-	"github.com/CodisLabs/codis/pkg/utils/math2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/math2"
 )
 
 type Delay interface {

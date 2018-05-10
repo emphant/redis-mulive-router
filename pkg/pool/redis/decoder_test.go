@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"testing"
 
-	"github.com/CodisLabs/codis/pkg/utils/assert"
+	"github.com/emphant/redis-mulive-router/pkg/utils/assert"
 )
 
 func TestBtoi64(t *testing.T) {

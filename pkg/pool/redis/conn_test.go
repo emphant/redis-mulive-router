@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/assert"
-	"github.com/CodisLabs/codis/pkg/utils/unsafe2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/assert"
+	"github.com/emphant/redis-mulive-router/pkg/utils/unsafe2"
 )
 
 func newConnPair() (*Conn, *Conn) {
