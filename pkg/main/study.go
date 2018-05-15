@@ -10,13 +10,15 @@ import (
 
 
 func main() {
-	fmt.Print("Enter your text: ")
-	qu := getQu()
+	EmpByID(10).Name="fefe"
 
-	reader := makeReder()
-	for r := range reader {
-		qu <- r
-	}
+	fmt.Print("Enter your text: ")
+	//qu := getQu()
+	//
+	//reader := makeReder()
+	//for r := range reader {
+	//	qu <- r
+	//}
 
 	//scanner := bufio.NewScanner(os.Stdin)
 	//fmt.Print("Enter your text: ")
@@ -58,3 +60,15 @@ func handle(tasks chan string) {
 	}
 	fmt.Println("handle finish")
 }
+
+type Employee struct {
+	ID int
+	Name string
+}
+
+func EmpByID(id int) *Employee{
+	e   := Employee{id,"name"}
+	return &e
+}
+
+//EmpByID(10).Name="fefe"
