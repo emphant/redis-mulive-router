@@ -13,17 +13,17 @@ import (
 	"fmt"
 )
 
-var p *sharedBackendConnPool
+var p *SharedBackendConnPool
 
 var addr = "172.16.1.7:6379"
 
 
 func tinit()  {
 	config := NewDefaultConfig()
-	p = &sharedBackendConnPool{
+	p = &SharedBackendConnPool{
 		config: config, parallel: math2.MaxInt(1, config.BackendPrimaryParallel),
 	}
-	p.pool = make(map[string]*sharedBackendConn)
+	p.pool = make(map[string]*SharedBackendConn)
 
 	p.Retain(addr)
 }

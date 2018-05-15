@@ -370,12 +370,12 @@ func (bc *BackendConn) loopWriter(round int) (err error) {
 }
 
 
-type sharedBackendConn struct {
+type SharedBackendConn struct {
 	addr string
 	host []byte
 	port []byte
 
-	owner *sharedBackendConnPool
+	owner *SharedBackendConnPool
 	conns [][]*BackendConn
 
 	single []*BackendConn
@@ -383,12 +383,12 @@ type sharedBackendConn struct {
 	refcnt int
 }
 
-func newSharedBackendConn(addr string, pool *sharedBackendConnPool) *sharedBackendConn {
+func newSharedBackendConn(addr string, pool *SharedBackendConnPool) *SharedBackendConn {
 	host, port, err := net.SplitHostPort(addr)
 	if err != nil {
 		log.ErrorErrorf(err, "split host-port failed, address = %s", addr)
 	}
-	s := &sharedBackendConn{
+	s := &SharedBackendConn{
 		addr: addr,
 		host: []byte(host), port: []byte(port),
 	}
@@ -411,14 +411,14 @@ func newSharedBackendConn(addr string, pool *sharedBackendConnPool) *sharedBacke
 	return s
 }
 
-func (s *sharedBackendConn) Addr() string {
+func (s *SharedBackendConn) Addr() string {
 	if s == nil {
 		return ""
 	}
 	return s.addr
 }
 
-func (s *sharedBackendConn) Release() {
+func (s *SharedBackendConn) Release() {
 	if s == nil {
 		return
 	}
@@ -438,7 +438,7 @@ func (s *sharedBackendConn) Release() {
 	delete(s.owner.pool, s.addr)
 }
 
-func (s *sharedBackendConn) Retain() *sharedBackendConn {
+func (s *SharedBackendConn) Retain() *SharedBackendConn {
 	if s == nil {
 		return nil
 	}
@@ -450,7 +450,7 @@ func (s *sharedBackendConn) Retain() *sharedBackendConn {
 	return s
 }
 
-func (s *sharedBackendConn) KeepAlive() {
+func (s *SharedBackendConn) KeepAlive() {
 	if s == nil {
 		return
 	}
@@ -461,7 +461,7 @@ func (s *sharedBackendConn) KeepAlive() {
 	}
 }
 
-func (s *sharedBackendConn) BackendConn(database int32, seed uint, must bool) *BackendConn {
+func (s *SharedBackendConn) BackendConn(database int32, seed uint, must bool) *BackendConn {
 	if s == nil {
 		return nil
 	}
@@ -490,33 +490,33 @@ func (s *sharedBackendConn) BackendConn(database int32, seed uint, must bool) *B
 }
 
 
-type sharedBackendConnPool struct {
+type SharedBackendConnPool struct {
 	config   *Config
 	//not know
 	parallel int
 
-	pool map[string]*sharedBackendConn
+	pool map[string]*SharedBackendConn
 }
 
-func newSharedBackendConnPool(config *Config, parallel int) *sharedBackendConnPool {
-	p := &sharedBackendConnPool{
+func newSharedBackendConnPool(config *Config, parallel int) *SharedBackendConnPool {
+	p := &SharedBackendConnPool{
 		config: config, parallel: math2.MaxInt(1, parallel),
 	}
-	p.pool = make(map[string]*sharedBackendConn)
+	p.pool = make(map[string]*SharedBackendConn)
 	return p
 }
 
-func (p *sharedBackendConnPool) KeepAlive() {
+func (p *SharedBackendConnPool) KeepAlive() {
 	for _, bc := range p.pool {
 		bc.KeepAlive()
 	}
 }
 
-func (p *sharedBackendConnPool) Get(addr string) *sharedBackendConn {
+func (p *SharedBackendConnPool) Get(addr string) *SharedBackendConn {
 	return p.pool[addr]
 }
 
-func (p *sharedBackendConnPool) Retain(addr string) *sharedBackendConn {
+func (p *SharedBackendConnPool) Retain(addr string) *SharedBackendConn {
 	if bc := p.pool[addr]; bc != nil {
 		return bc.Retain()
 	} else {
