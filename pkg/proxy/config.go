@@ -1,17 +1,17 @@
 // Copyright 2016 CodisLabs. All Rights Reserved.
 // Licensed under the MIT (MIT-LICENSE.txt) license.
 
-package pool
+package proxy
 
 import (
 	"bytes"
 
 	"github.com/BurntSushi/toml"
 
-	"github.com/CodisLabs/codis/pkg/utils/bytesize"
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/CodisLabs/codis/pkg/utils/timesize"
+	"github.com/emphant/redis-mulive-router/pkg/utils/bytesize"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/timesize"
 )
 
 const DefaultConfig = `
@@ -91,7 +91,7 @@ backend_replica_parallel = 1
 backend_keepalive_period = "75s"
 
 # Set number of databases of backend.
-backend_number_databases = 1
+backend_number_databases = 16
 
 # If there is no request from client for a long time, the connection will be closed. (0 to disable)
 # Set session recv buffer size & timeout.

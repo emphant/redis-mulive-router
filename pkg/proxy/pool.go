@@ -1,4 +1,4 @@
-package pool
+package proxy
 
 import (
 	"net"
@@ -11,7 +11,7 @@ import (
 	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
 	"github.com/emphant/redis-mulive-router/pkg/utils/math2"
-	"github.com/emphant/redis-mulive-router/pkg/pool/redis"
+	"github.com/emphant/redis-mulive-router/pkg/proxy/redis"
 )
 const (
 	stateConnected = iota + 1
@@ -498,7 +498,7 @@ type SharedBackendConnPool struct {
 	pool map[string]*SharedBackendConn
 }
 
-func newSharedBackendConnPool(config *Config, parallel int) *SharedBackendConnPool {
+func NewSharedBackendConnPool(config *Config, parallel int) *SharedBackendConnPool {
 	p := &SharedBackendConnPool{
 		config: config, parallel: math2.MaxInt(1, parallel),
 	}

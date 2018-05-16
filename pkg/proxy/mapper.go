@@ -1,14 +1,14 @@
 // Copyright 2016 CodisLabs. All Rights Reserved.
 // Licensed under the MIT (MIT-LICENSE.txt) license.
 
-package pool
+package proxy
 
 import (
 	"bytes"
 	"hash/crc32"
 	"strings"
 
-	"github.com/emphant/redis-mulive-router/pkg/pool/redis"
+	"github.com/emphant/redis-mulive-router/pkg/proxy/redis"
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 

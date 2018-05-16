@@ -1,4 +1,4 @@
-package pool
+package proxy
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 	"time"
 	"sync"
 	"strconv"
-	"github.com/emphant/redis-mulive-router/pkg/pool/redis"
+	"github.com/emphant/redis-mulive-router/pkg/proxy/redis"
 	"github.com/emphant/redis-mulive-router/pkg/utils/assert"
 	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 	"fmt"

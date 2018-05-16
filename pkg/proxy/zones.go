@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"sync"
-	"github.com/emphant/redis-mulive-router/pkg/pool"
 )
 
 // 管理数据中心
@@ -14,9 +13,13 @@ type Zone struct {
 	}
 	backend struct {
 		id int
-		bc *pool.SharedBackendConn
+		bc *SharedBackendConn
 	}
+	method forwardMethod
 }
 
+func (s *Zone) forward(r *Request) error {
+	return s.method.Forward(s, r)
+}
 
 //状态快照

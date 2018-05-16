@@ -1,4 +1,4 @@
-package pool
+package proxy
 
 import "github.com/emphant/redis-mulive-router/pkg/utils/errors"
 
