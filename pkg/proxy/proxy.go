@@ -79,6 +79,12 @@ func (s *Proxy) IsClosed() bool {
 	return s.closed
 }
 
+func (s *Proxy) IsOnline() bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.online && !s.closed
+}
+
 var ErrClosedProxy = errors.New("use of closed proxy")
 
 func (s *Proxy) Start() error {

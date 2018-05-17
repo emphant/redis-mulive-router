@@ -116,43 +116,81 @@ func (s *Session) loopReader(tasks *RequestChan, d *Router) (err error) {//从�
 		breakOnFailure = s.config.SessionBreakOnFailure
 		maxPipelineLen = s.config.SessionMaxPipeline
 	)
-
-	multi, err := s.Conn.DecodeMultiBulk()
-	if err != nil {
-		return err
-	}
-	s.incrOpTotal()
-
-	if tasks.Buffered() > maxPipelineLen {
-		return s.incrOpFails(nil, ErrTooManyPipelinedRequests)
-	}
-
-	start := time.Now()
-	s.LastOpUnix = start.Unix()
-	s.Ops++
-
-	r := &Request{}
-	r.Multi = multi
-	r.Batch = &sync.WaitGroup{}
-	r.Database = s.database
-	r.UnixNano = start.UnixNano()
-
-	if err := s.handleRequest(r, d); err != nil {
-		r.Resp = redis.NewErrorf("ERR handle request, %s", err)
-		tasks.PushBack(r)
-		if breakOnFailure {
+	for !s.quit {
+		multi, err := s.Conn.DecodeMultiBulk()
+		if err != nil {
 			return err
 		}
-	} else {
-		tasks.PushBack(r)
-	}
+		s.incrOpTotal()
 
+		if tasks.Buffered() > maxPipelineLen {
+			return s.incrOpFails(nil, ErrTooManyPipelinedRequests)
+		}
+
+		start := time.Now()
+		s.LastOpUnix = start.Unix()
+		s.Ops++
+
+		r := &Request{}
+		r.Multi = multi
+		r.Batch = &sync.WaitGroup{}
+		r.Database = s.database
+		r.UnixNano = start.UnixNano()
+
+		if err := s.handleRequest(r, d); err != nil {
+			r.Resp = redis.NewErrorf("ERR handle request, %s", err)
+			tasks.PushBack(r)
+			if breakOnFailure {
+				return err
+			}
+		} else {
+			tasks.PushBack(r)
+		}
+	}
 	return nil
 }
 
 func (s *Session) loopWriter(tasks *RequestChan) (err error) {//处理完成后转码成resp返回
+	defer func() {
+		s.CloseWithError(err)
+		tasks.PopFrontAllVoid(func(r *Request) {
+			s.incrOpFails(r, nil)
+		})
+		s.flushOpStats(true)
+	}()
 
-	return nil
+	var (
+		breakOnFailure = s.config.SessionBreakOnFailure
+		maxPipelineLen = s.config.SessionMaxPipeline
+	)
+
+	p := s.Conn.FlushEncoder()
+	p.MaxInterval = time.Millisecond
+	p.MaxBuffered = maxPipelineLen / 2
+
+	return tasks.PopFrontAll(func(r *Request) error {
+		resp, err := s.handleResponse(r)
+		if err != nil {
+			resp = redis.NewErrorf("ERR handle response, %s", err)
+			if breakOnFailure {
+				s.Conn.Encode(resp, true)
+				return s.incrOpFails(r, err)
+			}
+		}
+		if err := p.Encode(resp); err != nil {
+			return s.incrOpFails(r, err)
+		}
+		fflush := tasks.IsEmpty()
+		if err := p.Flush(fflush); err != nil {
+			return s.incrOpFails(r, err)
+		} else {
+			s.incrOpStats(r, resp.Type)
+		}
+		if fflush {
+			s.flushOpStats(false)
+		}
+		return nil
+	})
 }
 
 
@@ -170,6 +208,21 @@ func (s *Session) handleRequest(r *Request, d *Router) error {//视情况看是�
 		return fmt.Errorf("command '%s' is not allowed", opstr)
 	}
 	return d.dispatch(r)
+}
+
+func (s *Session) handleResponse(r *Request) (*redis.Resp, error) {
+	r.Batch.Wait()
+	if r.Coalesce != nil {
+		if err := r.Coalesce(); err != nil {
+			return nil, err
+		}
+	}
+	if err := r.Err; err != nil {
+		return nil, err
+	} else if r.Resp == nil {
+		return nil, ErrRespIsRequired
+	}
+	return r.Resp, nil
 }
 
 func (s *Session) incrOpTotal() {

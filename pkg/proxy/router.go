@@ -1,5 +1,6 @@
 package proxy
 
+import "fmt"
 
 // 对请求任务进行分派，选择到对应的数据中心读/写数据
 type Router struct {
@@ -30,7 +31,7 @@ func (router *Router) KeepAlive() {//保持连接池在线
 }
 
 func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
-
+	fmt.Printf("%#v",r)
 	return nil
 }
 
