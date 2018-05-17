@@ -14,12 +14,13 @@ func main() {
 	config := proxy.NewDefaultConfig()
 	s, err := proxy.New(config)
 
-	start(s)
 
 	if err != nil {
 		log.PanicErrorf(err, "create proxy with config file failed\n%s", config)
 	}
 	defer s.Close()
+
+	start(s)
 
 	go func() {
 		defer s.Close()

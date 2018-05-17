@@ -97,6 +97,7 @@ func (s *Proxy) Start() error {
 		return nil
 	}
 	s.online = true
+	s.router.Start()
 	return nil
 }
 
