@@ -44,6 +44,11 @@ func (router *Router) KeepAlive() {//保持连接池在线
 
 func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 	log.Printf("%#v",r)
+	for _,v := range r.Multi {
+		log.Printf("%#v",string(v.Value))
+	}
+
+
 
 	// 多写是否有rollback的概念
 

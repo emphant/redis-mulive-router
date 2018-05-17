@@ -204,7 +204,7 @@ func (s *Session) handleRequest(r *Request, d *Router) error {//视情况看是�
 	r.OpFlag = flag
 	r.Broken = &s.broken
 
-	if flag.IsNotAllowed() {
+	if flag.IsNotAllowed() {//TODO 修改
 		return fmt.Errorf("command '%s' is not allowed", opstr)
 	}
 	return d.dispatch(r)
