@@ -5,6 +5,7 @@ import (
 	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 	"github.com/emphant/redis-mulive-router/pkg/models"
 	"strings"
+	"strconv"
 )
 
 const ZoneSpr  = ":"
@@ -87,7 +88,23 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 				// TODO 可以加个强制从其他
 				other_val := string(r.Resp.Value)
 				log.Printf("switch to the other zone get %v",other_val)
+				ttlr := TTLRequest(getKey)
+				realZone.Forward(ttlr)
+				ttlr.Batch.Wait()
+				ttl,err:=strconv.Atoi(string(ttlr.Resp.Value))
+				log.Printf("ttl is  %v %v",ttl,err)
+				//ttl > 0 则继续
 
+				if ttl > 0{
+					setr := SetRequest(getKey,other_val,ttl)
+					z.Forward(setr)
+					setr.Batch.Wait()
+				}else {
+					setr := SetRequest(getKey,other_val,-1)
+					z.Forward(setr)
+					setr.Batch.Wait()
+				}
+				log.Printf("set key %v from zone %v to curr zone %v finish",getKey,zoneInfo,router.currentZonePrefix)
 
 
 			}else {//若无则直接返回

@@ -10,6 +10,7 @@ import (
 
 	"github.com/emphant/redis-mulive-router/pkg/proxy/redis"
 	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
+	"strconv"
 )
 
 type Request struct {
@@ -170,4 +171,43 @@ func (c *RequestChan) PopFrontAllVoid(onRequest func(r *Request)) {
 		onRequest(r)
 		return nil
 	})
+}
+
+func GetRequest(key string) *Request {
+	req := &Request{Batch: &sync.WaitGroup{}}
+	req.Multi = []*redis.Resp{
+		redis.NewBulkBytes([]byte("get")),
+		redis.NewBulkBytes([]byte(key)),
+	}
+	return req
+}
+
+func TTLRequest(key string)  *Request{
+	req := &Request{Batch: &sync.WaitGroup{}}
+	req.Multi = []*redis.Resp{
+		redis.NewBulkBytes([]byte("ttl")),
+		redis.NewBulkBytes([]byte(key)),
+	}
+	return req
+}
+
+func SetRequest(key string,value string,expire int) *Request {
+	req := &Request{Batch: &sync.WaitGroup{}}
+	if expire<0{
+		req.Multi = []*redis.Resp{
+			redis.NewBulkBytes([]byte("set")),
+			redis.NewBulkBytes([]byte(key)),
+			redis.NewBulkBytes([]byte(value)),
+		}
+	}else {
+		req.Multi = []*redis.Resp{
+			redis.NewBulkBytes([]byte("set")),
+			redis.NewBulkBytes([]byte(key)),
+			redis.NewBulkBytes([]byte(value)),
+			redis.NewBulkBytes([]byte("EX")),
+			redis.NewBulkBytes([]byte(strconv.Itoa(expire))),
+		}
+	}
+
+	return req
 }
