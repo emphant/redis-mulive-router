@@ -15,7 +15,7 @@ import (
 
 var p *SharedBackendConnPool
 
-var addr = "172.16.1.7:6379"
+var addr = "172.16.80.2:6379"
 
 
 func tinit()  {
@@ -31,7 +31,7 @@ func tinit()  {
 func TestError(t *testing.T) {
 	tinit()
 	conn := p.Get(addr)
-	conn.KeepAlive()
+	//conn.KeepAlive()
 
 	rConn := conn.BackendConn(0,0,true)
 	for  {
@@ -43,17 +43,22 @@ func TestError(t *testing.T) {
 		}
 	}
 
-	for i:=0;i<1000 ;i++ {
-		log.Println("starting request %d",i)
+	//for i:=0;i<1000 ;i++ {
+	//	log.Println("starting request %d",i)
 		req := &Request{Batch: &sync.WaitGroup{}}
 		req.Multi = []*redis.Resp{
 			//redis.NewInt([]byte("keys *")),
-			redis.NewBulkBytes([]byte("keys *")),
+			//redis.NewBulkBytes([]byte("keys *")),
+			//redis.NewBulkBytes([]byte("keys *")),
+			//redis.NewString([]byte("get")),
+			//redis.NewString([]byte("user3")),
+			redis.NewBulkBytes([]byte("get")),
+			redis.NewBulkBytes([]byte("user3")),
 		}
 		rConn.PushBack(req)
 		req.Batch.Wait()//MARK 此种情况上一个请求处于阻塞状态，所以不会有新的请求过来，再分析实际的情况
 		time.Sleep(1*time.Second)
-	}
+	//}
 
 
 

@@ -1,3 +1,4 @@
+// Copyright 2018 emphant. All Rights Reserved.
 // Copyright 2016 CodisLabs. All Rights Reserved.
 // Licensed under the MIT (MIT-LICENSE.txt) license.
 
@@ -28,6 +29,13 @@ type Request struct {
 	Err error
 
 	Coalesce func() error
+}
+
+func (r *Request) getKey() string{
+	if len(r.Multi)>=2 {
+		return string(r.Multi[1].Value)
+	}
+	return ""
 }
 
 func (r *Request) IsBroken() bool {

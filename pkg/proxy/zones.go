@@ -15,11 +15,35 @@ type Zone struct {
 		id int
 		bc *SharedBackendConn
 	}
-	method forwardMethod
+	prefix string //区域标识前缀
+	//method forwardMethod // 应该所有的都需要支持
 }
 
-func (s *Zone) forward(r *Request) error {
-	return s.method.Forward(s, r)
+func (sync *Zone) process(z *Zone, r *Request) (*BackendConn, error) {
+	var database, seed = r.Database, r.Seed16()
+	return z.backend.bc.BackendConn(database, seed, true), nil
+}
+
+func (z *Zone) Forward(r *Request) error {
+	z.lock.RLock()
+	bc, err := z.process(z, r)
+	z.lock.RUnlock()
+	if err != nil {
+		return err
+	}
+	bc.PushBack(r)
+	return nil
+}
+
+func NewZone(id int, conn *SharedBackendConn,prefix string) *Zone {
+	z := &Zone{}
+	z.id=id
+	z.lock.hold=false
+	//z.lock.RWMutex=sync.RWMutex
+	z.backend.id=id
+	z.backend.bc=conn
+	z.prefix=prefix
+	return z
 }
 
 //状态快照
