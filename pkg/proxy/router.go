@@ -2,13 +2,18 @@ package proxy
 
 import (
 	"sync"
-	"github.com/emphant/redis-mulive-router/pkg/utils/log"
-	"github.com/emphant/redis-mulive-router/pkg/models"
 	"strings"
 	"strconv"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/models"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
-const ZoneSpr  = ":"
+const ZoneSpr  = "::"
+var (
+	ErrZoneIsNotConfig = errors.New("the key requested zone is not exist in current config")
+	ErrRespIsRequired = errors.New("resp is required")
+)
 
 // 对请求任务进行分派，选择到对应的数据中心读/写数据
 type Router struct {
@@ -66,6 +71,8 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 
 	switch r.OpStr {
 		case "GET":
+			router.mu.RLock()
+			defer router.mu.RUnlock()
 			// get zone from prefix
 			z := router.zones[router.currentZonePrefix]
 			log.Println(z)
@@ -76,13 +83,17 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 			val:=string(r.Resp.Value)
 
 			getKey := r.getKey()
-			zoneInfo,ok:=router.getZoneInfo(getKey)
+			zoneInfo,exist,ok:=router.getZoneInfo(getKey)
+			if !exist {//key 为全局读取写入的信息，不存在则直接返回
+				return nil
+			}
 			//TODO timeout 异常
 			log.Printf("get from loacl is null %v , key contains zone %v , key not in curr %v ",val=="",ok,router.currentZonePrefix!=zoneInfo)
 			if val=="" && ok && router.currentZonePrefix!=zoneInfo{//本地查询结果为空&&key中包含区域信息&&区域不为当前区
 				//如果含有区域信息，使用指定区域再执行一次
 				realZone := router.zones[zoneInfo]
 				realZone.Forward(r)
+				//TODO wait此种做法失败可能
 				r.Batch.Wait()
 				//若有返回信息，并new一个request写入本地区域,ttl信息
 				// TODO 可以加个强制从其他
@@ -94,7 +105,6 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 				ttl,err:=strconv.Atoi(string(ttlr.Resp.Value))
 				log.Printf("ttl is  %v %v",ttl,err)
 				//ttl > 0 则继续
-
 				if ttl > 0{
 					setr := SetRequest(getKey,other_val,ttl)
 					z.Forward(setr)
@@ -105,18 +115,22 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 					setr.Batch.Wait()
 				}
 				log.Printf("set key %v from zone %v to curr zone %v finish",getKey,zoneInfo,router.currentZonePrefix)
-
-
+				return nil
 			}else {//若无则直接返回
 				//当前已经获取到值
-				//key不包含区域信息
-				//区域信息为当前
-
-				//TODO 如果没有区域匹配要log一个warn
-				return nil
+				//区域信息为当前,可能已超时或丢失
+				if !ok {//key中包含的区域信息未配置
+					return ErrZoneIsNotConfig
+				}
+				if router.currentZonePrefix==zoneInfo {
+					log.Warn("key is in curr zone,but not found this key may expired or missing")
+				}
 			}
+			return nil
 		case "SET":
 			//根据key类型设置是同步执行还是异步执行
+
+			//同步执行的时候的一致性，一个事务
 			return nil
 
 	}
@@ -126,20 +140,24 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 	return nil
 }
 
-func (router *Router) getZoneInfo(key string) (string,bool) {//包含的区域信息
-	keys := make([]string, 0, len(router.zones))
-	for k := range router.zones {
-		keys = append(keys, k)
-	}
-	log.Printf("zone keys %v",keys)
+func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区域信息,两种情况1.key不包含区域信息 2.包含的区域信息不存在
+	//keys := make([]string, 0, len(router.zones))
+	//for k := range router.zones {
+	//	keys = append(keys, k)
+	//}
+	//log.Printf("zone keys %v",keys)
 	//使用split方式
-	zoneInfo :=strings.Split(key,ZoneSpr)[0]
+	keyArray := strings.Split(key,ZoneSpr)
+	if len(keyArray) ==1 {
+		return "",false,false
+	}
+	zoneInfo :=keyArray[0]
 	log.Print(key,zoneInfo)
 	_,ok := router.zones[zoneInfo]
 	if ok {
-		return zoneInfo,true
+		return zoneInfo,true,true
 	}else {
-		return "",false
+		return "",true,false
 	}
 
 }
