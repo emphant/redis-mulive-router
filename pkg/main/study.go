@@ -7,12 +7,12 @@ import (
 	"time"
 	"strconv"
 )
-
+//TODO merge URL.path 到主干分支
 
 func main() {
-	EmpByID(10).Name="fefe"
+	//EmpByID(10).Name="fefe"
 
-	fmt.Print("Enter your text: ")
+	//fmt.Print("Enter your text: ")
 	//qu := getQu()
 	//
 	//reader := makeReder()
@@ -34,7 +34,25 @@ func main() {
 	//info := "user"
 	//qu <- info
 
+
+	//f(3)
+
+	r := &Point{1,2}
+	fmt.Println(r)
 }
+
+type Point struct {
+	X,Y float64
+}
+
+
+
+func f(x int){
+	fmt.Printf("f(%d) \n",x+0/x)
+	defer fmt.Printf("defer %d\n",x)
+	f(x-1)
+}
+
 func makeReder() chan string {
 	tasks := make(chan string)
 	go genInfos(tasks)

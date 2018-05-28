@@ -211,3 +211,12 @@ func SetRequest(key string,value string,expire int) *Request {
 
 	return req
 }
+
+func DELRequest(key string)  *Request{
+	req := &Request{Batch: &sync.WaitGroup{}}
+	req.Multi = []*redis.Resp{
+		redis.NewBulkBytes([]byte("del")),
+		redis.NewBulkBytes([]byte(key)),
+	}
+	return req
+}

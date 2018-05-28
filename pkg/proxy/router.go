@@ -2,17 +2,18 @@ package proxy
 
 import (
 	"sync"
-	"strings"
 	"strconv"
 	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 	"github.com/emphant/redis-mulive-router/pkg/models"
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"strings"
 )
 
 const ZoneSpr  = "::"
 var (
 	ErrZoneIsNotConfig = errors.New("the key requested zone is not exist in current config")
 	ErrRespIsRequired = errors.New("resp is required")
+	ErrZoneIsNotMatch = errors.New("the key to write zone is not match curr")
 )
 
 // 对请求任务进行分派，选择到对应的数据中心读/写数据
@@ -68,22 +69,20 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 	for _,v := range r.Multi {
 		log.Printf("%#v",string(v.Value))
 	}
-
+	getKey := r.getKey()
+	zoneInfo,exist,ok:=router.getZoneInfo(getKey)
+	z := router.zones[router.currentZonePrefix]
+	log.Println(z)
+	log.Println(router.currentZonePrefix)
 	switch r.OpStr {
 		case "GET":
 			router.mu.RLock()
 			defer router.mu.RUnlock()
 			// get zone from prefix
-			z := router.zones[router.currentZonePrefix]
-			log.Println(z)
-			log.Println(router.currentZonePrefix)
-
 			z.Forward(r) //数据库字段，此部分在这需要强制阻塞住执行获取结果
 			r.Batch.Wait() // 与上步操作合并，并在req中增加值execed
 			val:=string(r.Resp.Value)
 
-			getKey := r.getKey()
-			zoneInfo,exist,ok:=router.getZoneInfo(getKey)
 			if !exist {//key 为全局读取写入的信息，不存在则直接返回
 				return nil
 			}
@@ -129,15 +128,47 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 			return nil
 		case "SET":
 			//根据key类型设置是同步执行还是异步执行
+			if exist{ //存在区域信息
+				if  router.currentZonePrefix!=zoneInfo {
+					return ErrZoneIsNotMatch
+				}
+				realZone := router.zones[zoneInfo]
+				realZone.Forward(r)//失败了就失败了
+				for k := range router.zones{
+					if k== zoneInfo{
+						continue
+					}else {
+						oR := r
+						otherZone := router.zones[k]
+						otherZone.ForwardAsync(oR)
+					}
+				}
+			}else {//同步执行的时候的一致性，一个事务
+				transaction := &Transaction{}
+				for _,v := range router.zones{
+					zone := v
+					req := r.MakeSubRequest(1)
+					trancmpt := &SetRedisTrx{Zone:zone,Req:&req[0]}
+					transaction.Prepare(trancmpt)
+				}
 
-			//同步执行的时候的一致性，一个事务
+				err:=transaction.Exec()
+				if err!=nil{
+				   transaction.Rollback()
+				}else{
+				   err = transaction.Commit()
+				   if err!=nil {
+					  transaction.Rollback()
+				   }
+				}
+			}
 			return nil
-
+	default:
+		router.mu.RLock()
+		defer router.mu.RUnlock()
+		// get zone from prefix
+		return z.Forward(r) //数据库字段，此部分在这需要强制阻塞住执行获取结果
 	}
-	// 多写是否有rollback的概念
-
-	// 读需要根据key的格式去判断
-	return nil
 }
 
 func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区域信息,两种情况1.key不包含区域信息 2.包含的区域信息不存在

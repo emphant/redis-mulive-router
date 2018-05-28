@@ -461,7 +461,7 @@ func (s *SharedBackendConn) KeepAlive() {
 	}
 }
 
-func (s *SharedBackendConn) BackendConn(database int32, seed uint, must bool) *BackendConn {
+func (s *SharedBackendConn) BackendConn(database int32, seed uint, must bool) *BackendConn {//seed是为负载分配吧
 	if s == nil {
 		return nil
 	}

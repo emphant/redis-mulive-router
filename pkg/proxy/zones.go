@@ -35,6 +35,17 @@ func (z *Zone) Forward(r *Request) error {
 	return nil
 }
 
+func (z *Zone) ForwardAsync(r *Request) error {
+	z.lock.RLock()
+	bc, err := z.process(z, r)
+	z.lock.RUnlock()
+	if err != nil {
+		return err
+	}
+	bc.PushBack(r)
+	return nil
+}
+
 func NewZone(id int, conn *SharedBackendConn,prefix string) *Zone {
 	z := &Zone{}
 	z.id=id
