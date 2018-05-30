@@ -1,6 +1,8 @@
 package proxy
 
-import "github.com/emphant/redis-mulive-router/pkg/utils/errors"
+import (
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+)
 
 //rollback 方法
 
@@ -82,9 +84,10 @@ func (trxc *SetRedisTrx) Exec()  error{
 func (trxc *SetRedisTrx) Check() bool {
 	//等待执行完成
 	trxc.Req.Batch.Wait()
-	if trxc.Req.Value!=nil && string(trxc.Req.Value)=="OK" {
+	if trxc.Req.Resp.Value!=nil && string(trxc.Req.Resp.Value)=="OK" {
             trxc.flag=true
 	}
+	//time.Sleep(10*time.Second)
 	return trxc.flag
 }
 

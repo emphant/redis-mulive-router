@@ -7,6 +7,7 @@ import (
 	"github.com/emphant/redis-mulive-router/pkg/models"
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 	"strings"
+	"runtime"
 )
 
 const ZoneSpr  = "::"
@@ -65,6 +66,14 @@ func (router *Router) KeepAlive() {//保持连接池在线
 }
 
 func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
+	defer func() {//defer 防止出现panic,并打印栈
+		if err := recover(); err != nil {
+			var buf [8192]byte
+			n := runtime.Stack(buf[:],false)
+			log.Errorf("PANIC_ERROR %v %v",err,string(buf[:n]))
+		}
+	}()
+	//TODO DEbug 信息按照req分组
 	log.Printf("%#v",r)
 	for _,v := range r.Multi {
 		log.Printf("%#v",string(v.Value))
@@ -80,15 +89,16 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 			defer router.mu.RUnlock()
 			// get zone from prefix
 			z.Forward(r) //数据库字段，此部分在这需要强制阻塞住执行获取结果
+			//TODO timeout 异常
 			r.Batch.Wait() // 与上步操作合并，并在req中增加值execed
 			val:=string(r.Resp.Value)
-
-			if !exist {//key 为全局读取写入的信息，不存在则直接返回
+			log.Debugf("ENTER GET  key is %v value is %v",getKey,val)
+			if !exist || zoneInfo==router.currentZonePrefix {//如果key中不存在区域信息/或者区域信息为当前，则当前即为解
+				log.Debug("GET key NOT has zone info  OR  the zone info is local ")
 				return nil
 			}
-			//TODO timeout 异常
-			log.Printf("get from loacl is null %v , key contains zone %v , key not in curr %v ",val=="",ok,router.currentZonePrefix!=zoneInfo)
-			if val=="" && ok && router.currentZonePrefix!=zoneInfo{//本地查询结果为空&&key中包含区域信息&&区域不为当前区
+			if val=="" && ok {//本地查询结果为空&&key中包含区域信息
+				log.Debug("GET key has zone info AND find null value at local")
 				//如果含有区域信息，使用指定区域再执行一次
 				realZone := router.zones[zoneInfo]
 				realZone.Forward(r)
@@ -97,39 +107,38 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 				//若有返回信息，并new一个request写入本地区域,ttl信息
 				// TODO 可以加个强制从其他
 				other_val := string(r.Resp.Value)
-				log.Printf("switch to the other zone get %v",other_val)
+				log.Debugf("SWITCHED to the '%v' zone get '%v'",zoneInfo,other_val)
 				ttlr := TTLRequest(getKey)
 				realZone.Forward(ttlr)
 				ttlr.Batch.Wait()
 				ttl,err:=strconv.Atoi(string(ttlr.Resp.Value))
-				log.Printf("ttl is  %v %v",ttl,err)
+				log.Debugf("GETTD ttl is  '%v' '%v' ",ttl,err)
 				//ttl > 0 则继续
 				if ttl > 0{
+					log.Debug("START ttl setReq to local")
 					setr := SetRequest(getKey,other_val,ttl)
 					z.Forward(setr)
 					setr.Batch.Wait()
 				}else {
+					log.Debug("START no ttl setReq to local")
 					setr := SetRequest(getKey,other_val,-1)
 					z.Forward(setr)
 					setr.Batch.Wait()
 				}
-				log.Printf("set key %v from zone %v to curr zone %v finish",getKey,zoneInfo,router.currentZonePrefix)
+				log.Debugf("FINISH set key %v from zone %v to curr zone %v ",getKey,zoneInfo,router.currentZonePrefix)
 				return nil
-			}else {//若无则直接返回
-				//当前已经获取到值
-				//区域信息为当前,可能已超时或丢失
-				if !ok {//key中包含的区域信息未配置
-					return ErrZoneIsNotConfig
-				}
-				if router.currentZonePrefix==zoneInfo {
-					log.Warn("key is in curr zone,but not found this key may expired or missing")
-				}
-			}
+			}else if !ok {//key中包含的区域信息未配置
+				log.Errorf("GET key has zone info BUT not configed at this proxy!!! the key is %v ",getKey)
+				return ErrZoneIsNotConfig
+			}//else value!="" 为正常(含有区域信息，也在本地取到了值)
+			log.Info("GET key has zone info AND find  value at local success")
 			return nil
 		case "SET":
 			//根据key类型设置是同步执行还是异步执行
 			if exist{ //存在区域信息
+				log.Info("SET key has zone info ,start to set at local")
 				if  router.currentZonePrefix!=zoneInfo {
+					log.Error("SET key  has zone info BUT not local error")
 					return ErrZoneIsNotMatch
 				}
 				realZone := router.zones[zoneInfo]
@@ -143,24 +152,36 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 						otherZone.ForwardAsync(oR)
 					}
 				}
+				log.Info("FINISH SET key to local sync and to others async")
 			}else {//同步执行的时候的一致性，一个事务
+				log.Info("SET key NOT has zone info ,start set to all zones")
 				transaction := &Transaction{}
-				for _,v := range router.zones{
-					zone := v
-					req := r.MakeSubRequest(1)
-					trancmpt := &SetRedisTrx{Zone:zone,Req:&req[0]}
+				for k,v := range router.zones{
+					var trancmpt *SetRedisTrx
+					if k==router.currentZonePrefix {//如果为当前区域则直接使用当前req
+						zone := v
+						trancmpt = &SetRedisTrx{Zone:zone,Req:r}
+					}else {
+						zone := v
+						req := r.MakeSubRequest(1)
+						trancmpt = &SetRedisTrx{Zone:zone,Req:&req[0]}
+					}
 					transaction.Prepare(trancmpt)
 				}
-
 				err:=transaction.Exec()
 				if err!=nil{
-				   transaction.Rollback()
+					log.Errorf("SET key to all zones transaction exec error %v start rollback",err)
+				    transaction.Rollback()
+				    return err
 				}else{
 				   err = transaction.Commit()
 				   if err!=nil {
-					  transaction.Rollback()
+				   	   log.Errorf("SET key to all zones transaction commit error %v start rollback",err)
+					   transaction.Rollback()
+					   return err
 				   }
 				}
+				log.Info("FINISH SET key NOT has zone info ,start set to all zones")
 			}
 			return nil
 	default:

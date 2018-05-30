@@ -53,6 +53,10 @@ func (r *Request) MakeSubRequest(n int) []Request {
 		x.Broken = r.Broken
 		x.Database = r.Database
 		x.UnixNano = r.UnixNano
+		x.Multi = make([]*redis.Resp,len(r.Multi))
+		for index,v := range r.Multi{
+			x.Multi[index]=v
+		}
 	}
 	return sub
 }

@@ -119,7 +119,7 @@ func init() {
 		{"INCRBY", FlagWrite},
 		{"INCRBYFLOAT", FlagWrite},
 		{"INFO", 0},
-		{"KEYS", FlagNotAllow},
+		{"KEYS", 0},//open keys
 		{"LASTSAVE", FlagNotAllow},
 		{"LATENCY", FlagNotAllow},
 		{"LINDEX", 0},
