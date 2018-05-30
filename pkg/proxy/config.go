@@ -57,6 +57,11 @@ jodis_compatible = false
 # Set datacenter of proxy.
 proxy_datacenter = ""
 
+curr_zone_prefix = "A"
+curr_zone_addr = "172.16.80.2:6379"
+zone_info_key = "RMR_ZONE_INFO"
+zone_spr_4key = "::"
+
 # Set max number of alive sessions.
 proxy_max_clients = 1000
 
@@ -151,6 +156,11 @@ type Config struct {
 	ProxyMaxClients      int            `toml:"proxy_max_clients" json:"proxy_max_clients"`
 	ProxyMaxOffheapBytes bytesize.Int64 `toml:"proxy_max_offheap_size" json:"proxy_max_offheap_size"`
 	ProxyHeapPlaceholder bytesize.Int64 `toml:"proxy_heap_placeholder" json:"proxy_heap_placeholder"`
+
+	CurrZonePrefix string `toml:"curr_zone_prefix" json:"curr_zone_prefix"`
+	CurrZoneAddr   string `toml:"curr_zone_addr" json:"curr_zone_addr"`
+	ZoneInfoKey  string `toml:"zone_info_key" json:"zone_info_key"`
+	ZoneSpr4key  string `toml:"zone_spr_4key" json:"zone_spr_4key"`
 
 	BackendPingPeriod      timesize.Duration `toml:"backend_ping_period" json:"backend_ping_period"`
 	BackendRecvBufsize     bytesize.Int64    `toml:"backend_recv_bufsize" json:"backend_recv_bufsize"`

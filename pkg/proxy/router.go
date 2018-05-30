@@ -10,11 +10,12 @@ import (
 	"runtime"
 )
 
-const ZoneSpr  = "::"
 var (
 	ErrZoneIsNotConfig = errors.New("the key requested zone is not exist in current config")
 	ErrRespIsRequired = errors.New("resp is required")
 	ErrZoneIsNotMatch = errors.New("the key to write zone is not match curr")
+	ErrClosedRouter  = errors.New("use of closed router")
+	ErrGetconn  = errors.New("poll get addr error,not exist")
 )
 
 // 对请求任务进行分派，选择到对应的数据中心读/写数据
@@ -27,8 +28,9 @@ type Router struct {
 
 	currentZonePrefix string
 
-	online bool
-	closed bool
+	online  bool
+	closed  bool
+	zoneSpr string
 }
 
 func (s *Router) Start() {
@@ -40,29 +42,50 @@ func (s *Router) Start() {
 	s.online = true
 }
 
-func (router *Router) FillZone(pzones []*models.Zone) {//完成zone的初始化与填充
+func (router *Router) FillZone(pzones []*models.Zone) error {//完成zone的初始化与填充
+	router.mu.Lock()
+	defer router.mu.Unlock()
+	if router.closed {
+		return ErrClosedRouter
+	}
 	for _,zone := range pzones {
-		conn:=router.pool.Get(zone.Addr)
+		if zone.Prefix==router.currentZonePrefix && router.zones[router.currentZonePrefix]!=nil{
+			continue
+		}
+		conn:=router.pool.Retain(zone.Addr)
 		if nil!=conn {
 			rZone := NewZone(zone.Id,conn,zone.Prefix)
 			router.zones[zone.Prefix]=rZone
 		}else {
-			log.Errorf("pool get %v addr conn error",zone.Addr)//TODO 
+			log.Errorf("pool get %v addr conn error",zone.Addr)
+			return ErrGetconn
 		}
-
 	}
+	return nil
 }
 
 func (router *Router) Close() {//关闭
-
+	router.mu.Lock()
+	defer router.mu.Unlock()
+	if router.closed {
+		return
+	}
+	router.closed = true
+	//TODO release zone
 }
 
 func (router *Router) isOnline() bool {
 	return router.online && !router.closed
 }
 
-func (router *Router) KeepAlive() {//保持连接池在线
-
+func (router *Router) KeepAlive() error{//保持连接池在线
+	//router.mu.RLock()
+	//defer router.mu.RUnlock()
+	//if router.closed {
+	//	return ErrClosedRouter
+	//}
+	//router.pool.KeepAlive()
+	return nil
 }
 
 func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
@@ -199,7 +222,7 @@ func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区
 	//}
 	//log.Printf("zone keys %v",keys)
 	//使用split方式
-	keyArray := strings.Split(key,ZoneSpr)
+	keyArray := strings.Split(key,router.zoneSpr)
 	if len(keyArray) ==1 {
 		return "",false,false
 	}
@@ -214,23 +237,44 @@ func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区
 
 }
 
+func loadZoneInfo(z *Zone,key string) ( []*models.Zone, error) {
+	r := GetRequest(key)
+	z.Forward(r)
+	r.Batch.Wait()
+
+	if r.Value!=nil{
+		log.Println(string(r.Value))
+		ret,err := models.ListZone(r.Value)
+		if err==nil {
+			return ret,nil
+		}
+		return nil,err
+	}else {
+		return nil,nil
+	}
+
+}
+
 func NewRouter(config *Config)  *Router{
-	var addrA = "172.16.80.2:6379"
-	var addrB = "172.16.80.171:26379"
-	log.Println("@@@@@@@@@@@@@@@@@@")
 	s := &Router{config: config}
 	s.pool = NewSharedBackendConnPool(config, config.BackendPrimaryParallel)
 	s.zones = make(map[string]*Zone)
 
-	//TODO 修改逻辑，暂时默认填充
-	s.pool.Retain(addrA)
-	s.pool.Retain(addrB)
+	s.currentZonePrefix=config.CurrZonePrefix
+	s.zoneSpr = config.ZoneSpr4key
 
-
-	s.currentZonePrefix="A"
 	log.Println("called")
-	zonemA := models.Zone{1,addrA,"A"}
-	zonemB := models.Zone{2,addrB,"B"}
-	s.FillZone([]*models.Zone{&zonemA,&zonemB})
+	zonemA := models.Zone{1,config.CurrZoneAddr,config.CurrZonePrefix}
+	s.FillZone([]*models.Zone{&zonemA})
+
+
+	realZone := s.zones[config.CurrZonePrefix]
+	zones,err := loadZoneInfo(realZone,config.ZoneInfoKey)
+	log.Println(len(zones))
+	if err==nil {
+		s.FillZone(zones)
+	}else {
+		log.Errorf("new router while get zones error %v",err)
+	}
 	return s
 }
