@@ -4,13 +4,6 @@ import (
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
-//rollback 方法
-
-
-//多机执行问题
-
-
-//check all 执行
 var (
 	ErrTransCommit = errors.New("the trancsaction compants to commit not equal all")
 	ErrTransCmptCheck = errors.New("one trancsaction compant check error")
@@ -35,9 +28,9 @@ func (t *Transaction)  Exec()  error{
 
 	}()
 	//TODO 并发/依次执行
-	for _,transaction := range t.trans{
-		transaction.Exec()
-		t.execed=append(t.execed,transaction)
+	for i := 0; i < len(t.trans); i++{
+		t.trans[i].Exec()
+		t.execed=append(t.execed,t.trans[i])
 	}
 	return nil
 }
@@ -46,27 +39,27 @@ func (t *Transaction)  Commit()  error{
 	if len(t.execed) != len(t.trans){
 		return ErrTransCommit
 	}
-        for _,cmpt := range t.execed {
-             success := cmpt.Check()
-             if !success {
-                 return ErrTransCmptCheck
-             }
-        }
+	for i := 0; i < len(t.execed); i++ {
+		success := t.execed[i].Check()
+		if !success {
+			return ErrTransCmptCheck
+		}
+	}
 	// 出error了
 	return nil
 }
 
 func (t *Transaction)  Rollback()  {
 	// 失败回滚
-	for _,transaction := range t.execed{
-		transaction.Rollback()
+	for i := 0; i < len(t.execed); i++{
+		t.execed[i].Rollback()
 	}
 }
 
 type TrxCompants interface{
-	 Rollback()
-	 Exec() error
-	 Check() bool//在commit阶段被调用，用于检查是否与预期一致
+	Rollback()
+	Exec() error
+	Check() bool//在commit阶段被调用，用于检查是否与预期一致
 }
 
 
@@ -85,7 +78,7 @@ func (trxc *SetRedisTrx) Check() bool {
 	//等待执行完成
 	trxc.Req.Batch.Wait()
 	if trxc.Req.Resp.Value!=nil && string(trxc.Req.Resp.Value)=="OK" {
-            trxc.flag=true
+		trxc.flag=true
 	}
 	//time.Sleep(10*time.Second)
 	return trxc.flag

@@ -6,6 +6,7 @@ import (
 	//"os"
 	"time"
 	"strconv"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 )
 //TODO merge URL.path 到主干分支
 
@@ -39,7 +40,11 @@ func main() {
 
 	//r := &Point{1,2}
 	//fmt.Println(r)
-	defer_call()
+	//defer_call()
+
+	var b []byte = nil
+
+	log.Println(string(b))
 }
 
 type Point struct {

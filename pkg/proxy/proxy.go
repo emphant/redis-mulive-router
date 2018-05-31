@@ -12,6 +12,23 @@ import (
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 	"github.com/emphant/redis-mulive-router/pkg/models"
 	"github.com/emphant/redis-mulive-router/pkg/utils/math2"
+	"net/http"
+	"runtime"
+	"github.com/emphant/redis-mulive-router/pkg/utils/unsafe2"
+)
+
+type StatsFlags uint32
+
+func (s StatsFlags) HasBit(m StatsFlags) bool {
+	return (s & m) != 0
+}
+
+const (
+	StatsCmds = StatsFlags(1 << iota)
+	StatsSlots
+	StatsRuntime
+
+	StatsFull = StatsFlags(1^uint32(0))
 )
 
 type Proxy struct {
@@ -64,7 +81,27 @@ func (s *Proxy) serveProxy() {//启动代理tcp服务
 }
 
 func (s *Proxy) serveAdmin() {//启动web管理http服务
+	if s.IsClosed() {
+		return
+	}
+	defer s.Close()
 
+	log.Warnf("[%p] admin start service on %s", s, s.ladmin.Addr())
+
+	eh := make(chan error, 1)
+	go func(l net.Listener) {
+		h := http.NewServeMux()
+		h.Handle("/", newApiServer(s))
+		hs := &http.Server{Handler: h}
+		eh <- hs.Serve(l)
+	}(s.ladmin)
+
+	select {
+	case <-s.exit.C:
+		log.Warnf("[%p] admin shutdown", s)
+	case err := <-eh:
+		log.ErrorErrorf(err, "[%p] admin exit on error", s)
+	}
 }
 
 func (s *Proxy) FillZones() {//填充代理支持的数据中心以及对应的数据节点关系
@@ -185,6 +222,15 @@ func (s *Proxy) keepAlive(d time.Duration) {
 	}
 }
 
+func (s *Proxy) Model() *models.Proxy {
+	return s.model
+}
+
+func (s *Proxy) Config() *Config {
+	return s.config
+}
+
+
 func New(config *Config) (*Proxy, error) {
 	if err := config.Validate(); err != nil {
 		return nil, errors.Trace(err)
@@ -223,4 +269,145 @@ func New(config *Config) (*Proxy, error) {
 	go s.serveProxy()
 
 	return s, nil
+}
+
+type Overview struct {
+	Version string         `json:"version"`
+	Compile string         `json:"compile"`
+	Config  *Config        `json:"config,omitempty"`
+	Model   *models.Proxy  `json:"model,omitempty"`
+	Stats   *Stats         `json:"stats,omitempty"`
+}
+
+type Stats struct {
+	Online bool `json:"online"`
+	Closed bool `json:"closed"`
+
+	Sentinels struct {
+		Servers  []string          `json:"servers,omitempty"`
+		Masters  map[string]string `json:"masters,omitempty"`
+		Switched bool              `json:"switched,omitempty"`
+	} `json:"sentinels"`
+
+	Ops struct {
+		Total int64 `json:"total"`
+		Fails int64 `json:"fails"`
+		Redis struct {
+			Errors int64 `json:"errors"`
+		} `json:"redis"`
+		QPS int64      `json:"qps"`
+		Cmd []*OpStats `json:"cmd,omitempty"`
+	} `json:"ops"`
+
+	Sessions struct {
+		Total int64 `json:"total"`
+		Alive int64 `json:"alive"`
+	} `json:"sessions"`
+
+	Rusage struct {
+		Now string       `json:"now"`
+		CPU float64      `json:"cpu"`
+		Mem int64        `json:"mem"`
+		Raw *utils.Usage `json:"raw,omitempty"`
+	} `json:"rusage"`
+
+	Backend struct {
+		PrimaryOnly bool `json:"primary_only"`
+	} `json:"backend"`
+
+	Runtime *RuntimeStats `json:"runtime,omitempty"`
+}
+
+type RuntimeStats struct {
+	General struct {
+		Alloc   uint64 `json:"alloc"`
+		Sys     uint64 `json:"sys"`
+		Lookups uint64 `json:"lookups"`
+		Mallocs uint64 `json:"mallocs"`
+		Frees   uint64 `json:"frees"`
+	} `json:"general"`
+
+	Heap struct {
+		Alloc   uint64 `json:"alloc"`
+		Sys     uint64 `json:"sys"`
+		Idle    uint64 `json:"idle"`
+		Inuse   uint64 `json:"inuse"`
+		Objects uint64 `json:"objects"`
+	} `json:"heap"`
+
+	GC struct {
+		Num          uint32  `json:"num"`
+		CPUFraction  float64 `json:"cpu_fraction"`
+		TotalPauseMs uint64  `json:"total_pausems"`
+	} `json:"gc"`
+
+	NumProcs      int   `json:"num_procs"`
+	NumGoroutines int   `json:"num_goroutines"`
+	NumCgoCall    int64 `json:"num_cgo_call"`
+	MemOffheap    int64 `json:"mem_offheap"`
+}
+
+func (s *Proxy) Overview(flags StatsFlags) *Overview {
+	o := &Overview{
+		Version: utils.Version,
+		Compile: utils.Compile,
+		Config:  s.Config(),
+		Model:   s.Model(),
+		Stats:   s.Stats(flags),
+	}
+	return o
+}
+
+func (s *Proxy) Stats(flags StatsFlags) *Stats {
+	stats := &Stats{}
+	stats.Online = s.IsOnline()
+	stats.Closed = s.IsClosed()
+
+
+
+	stats.Ops.Total = OpTotal()
+	stats.Ops.Fails = OpFails()
+	stats.Ops.Redis.Errors = OpRedisErrors()
+	stats.Ops.QPS = OpQPS()
+
+	if flags.HasBit(StatsCmds) {
+		stats.Ops.Cmd = GetOpStatsAll()
+	}
+
+	stats.Sessions.Total = SessionsTotal()
+	stats.Sessions.Alive = SessionsAlive()
+
+	if u := GetSysUsage(); u != nil {
+		stats.Rusage.Now = u.Now.String()
+		stats.Rusage.CPU = u.CPU
+		stats.Rusage.Mem = u.MemTotal()
+		stats.Rusage.Raw = u.Usage
+	}
+
+	stats.Backend.PrimaryOnly = s.Config().BackendPrimaryOnly
+
+	if flags.HasBit(StatsRuntime) {
+		var r runtime.MemStats
+		runtime.ReadMemStats(&r)
+
+		stats.Runtime = &RuntimeStats{}
+		stats.Runtime.General.Alloc = r.Alloc
+		stats.Runtime.General.Sys = r.Sys
+		stats.Runtime.General.Lookups = r.Lookups
+		stats.Runtime.General.Mallocs = r.Mallocs
+		stats.Runtime.General.Frees = r.Frees
+		stats.Runtime.Heap.Alloc = r.HeapAlloc
+		stats.Runtime.Heap.Sys = r.HeapSys
+		stats.Runtime.Heap.Idle = r.HeapIdle
+		stats.Runtime.Heap.Inuse = r.HeapInuse
+		stats.Runtime.Heap.Objects = r.HeapObjects
+		stats.Runtime.GC.Num = r.NumGC
+		stats.Runtime.GC.CPUFraction = r.GCCPUFraction
+		stats.Runtime.GC.TotalPauseMs = r.PauseTotalNs / uint64(time.Millisecond)
+		stats.Runtime.NumProcs = runtime.GOMAXPROCS(0)
+		stats.Runtime.NumGoroutines = runtime.NumGoroutine()
+		stats.Runtime.NumCgoCall = runtime.NumCgoCall()
+		stats.Runtime.MemOffheap = unsafe2.OffheapBytes()
+	}
+	return stats
 }

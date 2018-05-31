@@ -2,12 +2,12 @@ package proxy
 
 import (
 	"sync"
-	"strconv"
 	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 	"github.com/emphant/redis-mulive-router/pkg/models"
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 	"strings"
 	"runtime"
+	"strconv"
 )
 
 var (
@@ -96,16 +96,9 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 			log.Errorf("PANIC_ERROR %v %v",err,string(buf[:n]))
 		}
 	}()
-	//TODO DEbug 信息按照req分组
-	log.Printf("%#v",r)
-	for _,v := range r.Multi {
-		log.Printf("%#v",string(v.Value))
-	}
 	getKey := r.getKey()
 	zoneInfo,exist,ok:=router.getZoneInfo(getKey)
 	z := router.zones[router.currentZonePrefix]
-	log.Println(z)
-	log.Println(router.currentZonePrefix)
 	switch r.OpStr {
 		case "GET":
 			router.mu.RLock()
@@ -125,41 +118,40 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 				//如果含有区域信息，使用指定区域再执行一次
 				realZone := router.zones[zoneInfo]
 				realZone.Forward(r)
-				//TODO wait此种做法失败可能
 				r.Batch.Wait()
 				//若有返回信息，并new一个request写入本地区域,ttl信息
-				// TODO 可以加个强制从其他
 				other_val := string(r.Resp.Value)
-				log.Debugf("SWITCHED to the '%v' zone get '%v'",zoneInfo,other_val)
-				ttlr := TTLRequest(getKey)
-				realZone.Forward(ttlr)
-				ttlr.Batch.Wait()
-				ttl,err:=strconv.Atoi(string(ttlr.Resp.Value))
-				log.Debugf("GETTD ttl is  '%v' '%v' ",ttl,err)
-				//ttl > 0 则继续
-				if ttl > 0{
-					log.Debug("START ttl setReq to local")
-					setr := SetRequest(getKey,other_val,ttl)
-					z.Forward(setr)
-					setr.Batch.Wait()
-				}else {
-					log.Debug("START no ttl setReq to local")
-					setr := SetRequest(getKey,other_val,-1)
-					z.Forward(setr)
-					setr.Batch.Wait()
+				if other_val!=""{
+					log.Debugf("SWITCHED to the '%v' zone get '%v'",zoneInfo,other_val)
+					ttlr := TTLRequest(getKey)
+					realZone.Forward(ttlr)
+					ttlr.Batch.Wait()
+					ttl,err:=strconv.Atoi(string(ttlr.Resp.Value))
+					log.Debugf("GETTD ttl is  '%v' '%v' ",ttl,err)
+					//ttl > 0 则继续
+					if ttl > 0{
+						log.Debug("START ttl setReq to local")
+						setr := SetRequest(getKey,other_val,ttl)
+						z.Forward(setr)
+						setr.Batch.Wait()
+					}else {
+						log.Debug("START no ttl setReq to local")
+						setr := SetRequest(getKey,other_val,-1)
+						z.Forward(setr)
+						setr.Batch.Wait()
+					}
+					log.Debugf("FINISH set key %v from zone %v to curr zone %v ",getKey,zoneInfo,router.currentZonePrefix)
 				}
-				log.Debugf("FINISH set key %v from zone %v to curr zone %v ",getKey,zoneInfo,router.currentZonePrefix)
 				return nil
 			}else if !ok {//key中包含的区域信息未配置
 				log.Errorf("GET key has zone info BUT not configed at this proxy!!! the key is %v ",getKey)
 				return ErrZoneIsNotConfig
 			}//else value!="" 为正常(含有区域信息，也在本地取到了值)
-			log.Info("GET key has zone info AND find  value at local success")
+			//log.Info("GET key has zone info AND find  value at local success")
 			return nil
 		case "SET":
-			//根据key类型设置是同步执行还是异步执行
 			if exist{ //存在区域信息
-				log.Info("SET key has zone info ,start to set at local")
+				//log.Info("SET key has zone info ,start to set at local")
 				if  router.currentZonePrefix!=zoneInfo {
 					log.Error("SET key  has zone info BUT not local error")
 					return ErrZoneIsNotMatch
@@ -175,9 +167,9 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 						otherZone.ForwardAsync(oR)
 					}
 				}
-				log.Info("FINISH SET key to local sync and to others async")
+				//log.Info("FINISH SET key to local sync and to others async")
 			}else {//同步执行的时候的一致性，一个事务
-				log.Info("SET key NOT has zone info ,start set to all zones")
+				//log.Info("SET key NOT has zone info ,start set to all zones")
 				transaction := &Transaction{}
 				for k,v := range router.zones{
 					var trancmpt *SetRedisTrx
@@ -204,7 +196,7 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 					   return err
 				   }
 				}
-				log.Info("FINISH SET key NOT has zone info ,start set to all zones")
+				//log.Info("FINISH SET key NOT has zone info ,start set to all zones")
 			}
 			return nil
 	default:
@@ -221,7 +213,6 @@ func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区
 		return "",false,false
 	}
 	zoneInfo :=keyArray[0]
-	log.Print(key,zoneInfo)
 	_,ok := router.zones[zoneInfo]
 	if ok {
 		return zoneInfo,true,true

@@ -57,7 +57,7 @@ Options:
 			log.StdLog = log.New(w, "")
 		}
 	}
-	log.SetLevel(log.LevelInfo)
+	log.SetLevel(log.LevelWarn)
 
 	if s, ok := utils.Argument(d, "--log-level"); ok {
 		if !log.SetLevelString(s) {

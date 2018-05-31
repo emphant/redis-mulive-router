@@ -292,7 +292,7 @@ func (bc *BackendConn) loopReader(tasks <-chan *Request, c *redis.Conn, round in
 				}
 			}
 		}
-		log.Debug(string(resp.Value))
+		//log.Debug(string(resp.Value))
 		bc.setResponse(r, resp, nil)
 	}
 	return nil
@@ -347,22 +347,22 @@ func (bc *BackendConn) loopWriter(round int) (err error) {
 	//log.Println("Into loop writer func")
 
 	for r := range bc.input {
-		log.Debugf("req is bc.input len %d and %v ",len(bc.input),r)
+		//log.Debugf("req is bc.input len %d and %v ",len(bc.input),r)
 		if r.IsReadOnly() && r.IsBroken() {
 			bc.setResponse(r, nil, ErrRequestIsBroken)
 			continue
 		}
 		if err := p.EncodeMultiBulk(r.Multi); err != nil {
-			log.Debug("1xx")
+			//log.Debug("1xx")
 			return bc.setResponse(r, nil, fmt.Errorf("W1backend conn failure, %s", err))
 		}
 		if err := p.Flush(len(bc.input) == 0); err != nil {//MARK flush请求数据失败
-			log.Debug("2xx",len(bc.input))
+			//log.Debug("2xx",len(bc.input))
 			return bc.setResponse(r, nil, fmt.Errorf("W2backend conn failure, %s", err))
 		} else {//发送数据完成，发送任务提示去等着接受返回信息吧
-			log.Debug("3xx")
+			//log.Debug("3xx")
 			tasks <- r
-			log.Debug("4xx")
+			//log.Debug("4xx")
 		}
 	}
 	log.Debug("5xx")
