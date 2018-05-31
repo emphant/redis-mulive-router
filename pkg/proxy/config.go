@@ -17,12 +17,12 @@ import (
 const DefaultConfig = `
 ##################################################
 #                                                #
-#                  Codis-Proxy                   #
+#           RedisMulive-Router                   #
 #                                                #
 ##################################################
 
 # Set Codis Product Name/Auth.
-product_name = "codis-demo"
+product_name = "redismulive-router"
 product_auth = ""
 
 # Set auth for client session
@@ -39,20 +39,6 @@ admin_addr = "0.0.0.0:21080"
 proto_type = "tcp4"
 proxy_addr = "0.0.0.0:29000"
 
-# Set jodis address & session timeout
-#   1. jodis_name is short for jodis_coordinator_name, only accept "zookeeper" & "etcd".
-#   2. jodis_addr is short for jodis_coordinator_addr
-#   3. jodis_auth is short for jodis_coordinator_auth, for zookeeper/etcd, "user:password" is accepted.
-#   4. proxy will be registered as node:
-#        if jodis_compatible = true (not suggested):
-#          /zk/codis/db_{PRODUCT_NAME}/proxy-{HASHID} (compatible with Codis2.0)
-#        or else
-#          /jodis/{PRODUCT_NAME}/proxy-{HASHID}
-jodis_name = ""
-jodis_addr = ""
-jodis_auth = ""
-jodis_timeout = "20s"
-jodis_compatible = false
 
 # Set datacenter of proxy.
 proxy_datacenter = ""
@@ -117,21 +103,7 @@ session_keepalive_period = "75s"
 # Set session to be sensitive to failures. Default is false, instead of closing socket, proxy will send an error response to client.
 session_break_on_failure = false
 
-# Set metrics server (such as http://localhost:28000), proxy will report json formatted metrics to specified server in a predefined period.
-metrics_report_server = ""
-metrics_report_period = "1s"
 
-# Set influxdb server (such as http://localhost:8086), proxy will report metrics to influxdb.
-metrics_report_influxdb_server = ""
-metrics_report_influxdb_period = "1s"
-metrics_report_influxdb_username = ""
-metrics_report_influxdb_password = ""
-metrics_report_influxdb_database = ""
-
-# Set statsd server (such as localhost:8125), proxy will report metrics to statsd.
-metrics_report_statsd_server = ""
-metrics_report_statsd_period = "1s"
-metrics_report_statsd_prefix = ""
 `
 
 type Config struct {
@@ -142,11 +114,6 @@ type Config struct {
 	HostProxy string `toml:"-" json:"-"`
 	HostAdmin string `toml:"-" json:"-"`
 
-	JodisName       string            `toml:"jodis_name" json:"jodis_name"`
-	JodisAddr       string            `toml:"jodis_addr" json:"jodis_addr"`
-	JodisAuth       string            `toml:"jodis_auth" json:"jodis_auth"`
-	JodisTimeout    timesize.Duration `toml:"jodis_timeout" json:"jodis_timeout"`
-	JodisCompatible bool              `toml:"jodis_compatible" json:"jodis_compatible"`
 
 	ProductName string `toml:"product_name" json:"product_name"`
 	ProductAuth string `toml:"product_auth" json:"-"`
@@ -182,16 +149,6 @@ type Config struct {
 	SessionKeepAlivePeriod timesize.Duration `toml:"session_keepalive_period" json:"session_keepalive_period"`
 	SessionBreakOnFailure  bool              `toml:"session_break_on_failure" json:"session_break_on_failure"`
 
-	MetricsReportServer           string            `toml:"metrics_report_server" json:"metrics_report_server"`
-	MetricsReportPeriod           timesize.Duration `toml:"metrics_report_period" json:"metrics_report_period"`
-	MetricsReportInfluxdbServer   string            `toml:"metrics_report_influxdb_server" json:"metrics_report_influxdb_server"`
-	MetricsReportInfluxdbPeriod   timesize.Duration `toml:"metrics_report_influxdb_period" json:"metrics_report_influxdb_period"`
-	MetricsReportInfluxdbUsername string            `toml:"metrics_report_influxdb_username" json:"metrics_report_influxdb_username"`
-	MetricsReportInfluxdbPassword string            `toml:"metrics_report_influxdb_password" json:"-"`
-	MetricsReportInfluxdbDatabase string            `toml:"metrics_report_influxdb_database" json:"metrics_report_influxdb_database"`
-	MetricsReportStatsdServer     string            `toml:"metrics_report_statsd_server" json:"metrics_report_statsd_server"`
-	MetricsReportStatsdPeriod     timesize.Duration `toml:"metrics_report_statsd_period" json:"metrics_report_statsd_period"`
-	MetricsReportStatsdPrefix     string            `toml:"metrics_report_statsd_prefix" json:"metrics_report_statsd_prefix"`
 }
 
 func NewDefaultConfig() *Config {
@@ -231,14 +188,7 @@ func (c *Config) Validate() error {
 	if c.AdminAddr == "" {
 		return errors.New("invalid admin_addr")
 	}
-	if c.JodisName != "" {
-		if c.JodisAddr == "" {
-			return errors.New("invalid jodis_addr")
-		}
-		if c.JodisTimeout < 0 {
-			return errors.New("invalid jodis_timeout")
-		}
-	}
+
 	if c.ProductName == "" {
 		return errors.New("invalid product_name")
 	}
@@ -305,14 +255,5 @@ func (c *Config) Validate() error {
 		return errors.New("invalid session_keepalive_period")
 	}
 
-	if c.MetricsReportPeriod < 0 {
-		return errors.New("invalid metrics_report_period")
-	}
-	if c.MetricsReportInfluxdbPeriod < 0 {
-		return errors.New("invalid metrics_report_influxdb_period")
-	}
-	if c.MetricsReportStatsdPeriod < 0 {
-		return errors.New("invalid metrics_report_statsd_period")
-	}
 	return nil
 }
