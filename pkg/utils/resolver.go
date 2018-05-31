@@ -8,10 +8,8 @@ import (
 	"os"
 	"strconv"
 	"time"
-
 	"golang.org/x/net/context"
-
-	"github.com/CodisLabs/codis/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
 func LookupIP(host string) []net.IP {

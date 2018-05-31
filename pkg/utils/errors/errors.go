@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/CodisLabs/codis/pkg/utils/trace"
+	"github.com/emphant/redis-mulive-router/pkg/utils/trace"
 )
 
 var TraceEnabled = true

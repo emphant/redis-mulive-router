@@ -12,8 +12,8 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/sync2/atomic2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
 
 	redigo "github.com/garyburd/redigo/redis"
 )

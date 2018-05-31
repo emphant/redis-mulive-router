@@ -6,7 +6,7 @@ package unsafe2
 import (
 	"testing"
 
-	"github.com/CodisLabs/codis/pkg/utils/assert"
+	"github.com/emphant/redis-mulive-router/pkg/utils/assert"
 )
 
 func TestMakeGoSlice(t *testing.T) {

@@ -6,8 +6,8 @@ package bytesize
 import (
 	"testing"
 
-	"github.com/CodisLabs/codis/pkg/utils/assert"
-	"github.com/CodisLabs/codis/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/assert"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
 func TestByteSize(t *testing.T) {

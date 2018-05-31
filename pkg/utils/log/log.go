@@ -13,8 +13,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/trace"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/trace"
 )
 
 const (

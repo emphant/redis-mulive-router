@@ -9,8 +9,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 )
 
 type Duration time.Duration

@@ -8,7 +8,7 @@ import (
 	"runtime"
 	"unsafe"
 
-	"github.com/CodisLabs/codis/pkg/utils/sync2/atomic2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
 )
 
 var allocOffheapBytes atomic2.Int64

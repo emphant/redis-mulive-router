@@ -8,19 +8,6 @@
   version = "v0.3.0"
 
 [[projects]]
-  name = "github.com/CodisLabs/codis"
-  packages = [
-    "pkg/utils/assert",
-    "pkg/utils/errors",
-    "pkg/utils/log",
-    "pkg/utils/math2",
-    "pkg/utils/sync2/atomic2",
-    "pkg/utils/trace"
-  ]
-  revision = "9fde2809cca131e3da1a7e0920ea151029301fb4"
-  version = "3.2.2"
-
-[[projects]]
   name = "github.com/codegangsta/inject"
   packages = ["."]
   revision = "37d7f8432a3e684eef9b2edece76bdfa6ac85b39"
@@ -45,12 +32,6 @@
   name = "github.com/go-martini/martini"
   packages = ["."]
   revision = "fe605b5cd210047ae3bb73d2b69a5b912a9b423d"
-
-[[projects]]
-  branch = "master"
-  name = "github.com/martini-contrib/binding"
-  packages = ["."]
-  revision = "05d3e151b6cf34dacac6306226a33db68459a3b5"
 
 [[projects]]
   branch = "master"
@@ -85,6 +66,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "f59767edf268b219ca1ab94097e0739b1aa7df6d9aa51b4194606339270cc51c"
+  inputs-digest = "42fd80da1cc86e9cc7d296cde5fcd5bfed6ef0ebde0f31643d8bc55cab5e2e58"
   solver-name = "gps-cdcl"
   solver-version = 1

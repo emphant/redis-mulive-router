@@ -15,10 +15,10 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
-	"github.com/CodisLabs/codis/pkg/utils/sync2/atomic2"
-	"github.com/CodisLabs/codis/pkg/utils/trace"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
+	"github.com/emphant/redis-mulive-router/pkg/utils/trace"
 )
 
 const (

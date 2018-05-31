@@ -5,9 +5,8 @@ package models
 
 import (
 	"encoding/json"
-
-	"github.com/CodisLabs/codis/pkg/utils/errors"
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
 func jsonEncode(v interface{}) []byte {

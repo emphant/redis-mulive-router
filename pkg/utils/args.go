@@ -6,7 +6,7 @@ package utils
 import (
 	"strconv"
 
-	"github.com/CodisLabs/codis/pkg/utils/log"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 )
 
 func Argument(d map[string]interface{}, name string) (string, bool) {

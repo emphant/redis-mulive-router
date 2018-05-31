@@ -29,9 +29,6 @@
   name = "github.com/BurntSushi/toml"
   version = "0.3.0"
 
-[[constraint]]
-  name = "github.com/CodisLabs/codis"
-  version = "3.2.2"
 
 [[constraint]]
   name = "github.com/garyburd/redigo"
