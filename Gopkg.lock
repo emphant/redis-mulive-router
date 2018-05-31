@@ -11,16 +11,20 @@
   name = "github.com/CodisLabs/codis"
   packages = [
     "pkg/utils/assert",
-    "pkg/utils/bytesize",
     "pkg/utils/errors",
     "pkg/utils/log",
     "pkg/utils/math2",
     "pkg/utils/sync2/atomic2",
-    "pkg/utils/timesize",
     "pkg/utils/trace"
   ]
   revision = "9fde2809cca131e3da1a7e0920ea151029301fb4"
   version = "3.2.2"
+
+[[projects]]
+  name = "github.com/docopt/docopt-go"
+  packages = ["."]
+  revision = "784ddc588536785e7299f7272f39101f7faccc3f"
+  version = "0.6.2"
 
 [[projects]]
   name = "github.com/garyburd/redigo"
@@ -46,6 +50,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "bb96e915501835238cf16c24bb561da541a75b9bb1135fc0bba0e6f1651b5377"
+  inputs-digest = "3974d70b10d0a44fa9c11dd49c744432f4223c4bac6cf99339960408c4c5fb48"
   solver-name = "gps-cdcl"
   solver-version = 1

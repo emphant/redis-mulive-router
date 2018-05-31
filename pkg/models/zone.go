@@ -20,8 +20,6 @@ func (z *Zone) Dncode(info []byte)  error {
 
 func ListZone(b []byte) ([]*Zone, error) {
 	var zs []*Zone
-	fmt.Println(b)
 	err := json.Unmarshal(b,&zs)
-	fmt.Println(err)
 	return zs,err
 }

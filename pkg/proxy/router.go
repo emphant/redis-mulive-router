@@ -79,12 +79,12 @@ func (router *Router) isOnline() bool {
 }
 
 func (router *Router) KeepAlive() error{//保持连接池在线
-	//router.mu.RLock()
-	//defer router.mu.RUnlock()
-	//if router.closed {
-	//	return ErrClosedRouter
-	//}
-	//router.pool.KeepAlive()
+	router.mu.RLock()
+	defer router.mu.RUnlock()
+	if router.closed {
+		return ErrClosedRouter
+	}
+	router.pool.KeepAlive()
 	return nil
 }
 
@@ -216,12 +216,6 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 }
 
 func (router *Router) getZoneInfo(key string) (string,bool,bool) {//包含的区域信息,两种情况1.key不包含区域信息 2.包含的区域信息不存在
-	//keys := make([]string, 0, len(router.zones))
-	//for k := range router.zones {
-	//	keys = append(keys, k)
-	//}
-	//log.Printf("zone keys %v",keys)
-	//使用split方式
 	keyArray := strings.Split(key,router.zoneSpr)
 	if len(keyArray) ==1 {
 		return "",false,false

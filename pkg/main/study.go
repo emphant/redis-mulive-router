@@ -37,15 +37,27 @@ func main() {
 
 	//f(3)
 
-	r := &Point{1,2}
-	fmt.Println(r)
+	//r := &Point{1,2}
+	//fmt.Println(r)
+	defer_call()
 }
 
 type Point struct {
 	X,Y float64
 }
 
-
+func defer_call()  {
+	defer func() {
+		fmt.Println("1")
+	}()
+	defer func() {
+		fmt.Println("2")
+	}()
+	defer func() {
+		fmt.Println("3")
+	}()
+	panic("error")
+}
 
 func f(x int){
 	fmt.Printf("f(%d) \n",x+0/x)
