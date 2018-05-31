@@ -2,6 +2,7 @@ package proxy
 
 import (
 	"sync"
+	"github.com/emphant/redis-mulive-router/pkg/models"
 )
 
 // 管理数据中心
@@ -44,6 +45,14 @@ func (z *Zone) ForwardAsync(r *Request) error {
 	}
 	bc.PushBack(r)
 	return nil
+}
+
+func (z *Zone) snapshot() *models.Zone {
+	var m = &models.Zone{
+		Prefix:z.prefix,
+		Addr: z.backend.bc.Addr(),
+	}
+	return m
 }
 
 func NewZone(id int, conn *SharedBackendConn,prefix string) *Zone {

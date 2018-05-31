@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"runtime"
 	"github.com/emphant/redis-mulive-router/pkg/utils/unsafe2"
+	"math"
 )
 
 type StatsFlags uint32
@@ -25,10 +26,10 @@ func (s StatsFlags) HasBit(m StatsFlags) bool {
 
 const (
 	StatsCmds = StatsFlags(1 << iota)
-	StatsSlots
+	StatsZones
 	StatsRuntime
 
-	StatsFull = StatsFlags(1^uint32(0))
+	StatsFull = StatsFlags(math.MaxUint32)
 )
 
 type Proxy struct {
@@ -230,6 +231,12 @@ func (s *Proxy) Config() *Config {
 	return s.config
 }
 
+func (s *Proxy) Zones() []*models.Zone {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.router.GetZones()
+}
+
 
 func New(config *Config) (*Proxy, error) {
 	if err := config.Validate(); err != nil {
@@ -277,6 +284,7 @@ type Overview struct {
 	Config  *Config        `json:"config,omitempty"`
 	Model   *models.Proxy  `json:"model,omitempty"`
 	Stats   *Stats         `json:"stats,omitempty"`
+	Zones   []*models.Zone         `json:"zones,omitempty"`
 }
 
 type Stats struct {
@@ -354,6 +362,10 @@ func (s *Proxy) Overview(flags StatsFlags) *Overview {
 		Config:  s.Config(),
 		Model:   s.Model(),
 		Stats:   s.Stats(flags),
+	}
+
+	if flags.HasBit(StatsZones) {
+		o.Zones = s.Zones()
 	}
 	return o
 }

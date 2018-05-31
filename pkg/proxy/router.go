@@ -42,6 +42,18 @@ func (s *Router) Start() {
 	s.online = true
 }
 
+func (s *Router) GetZones() []*models.Zone {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	zoneModels := make([]*models.Zone, len(s.zones))
+	index := 0
+	for i,_ := range s.zones {
+		zoneModels[index] = s.zones[i].snapshot()
+		index++
+	}
+	return zoneModels
+}
+
 func (router *Router) FillZone(pzones []*models.Zone) error {//完成zone的初始化与填充
 	router.mu.Lock()
 	defer router.mu.Unlock()
