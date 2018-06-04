@@ -21,7 +21,7 @@ const DefaultConfig = `
 #                                                #
 ##################################################
 
-# Set Codis Product Name/Auth.
+# Set Product Name/Auth.
 product_name = "redismulive-router"
 product_auth = ""
 

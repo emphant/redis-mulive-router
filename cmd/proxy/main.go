@@ -47,7 +47,6 @@ Options:
 		fmt.Println("version:", utils.Version)
 		fmt.Println("compile:", utils.Compile)
 		return
-
 	}
 	if s, ok := utils.Argument(d, "--log"); ok {
 		w, err := log.NewRollingFile(s, log.DailyRolling)
@@ -57,7 +56,7 @@ Options:
 			log.StdLog = log.New(w, "")
 		}
 	}
-	log.SetLevel(log.LevelWarn)
+	log.SetLevel(log.LevelInfo)
 
 	if s, ok := utils.Argument(d, "--log-level"); ok {
 		if !log.SetLevelString(s) {

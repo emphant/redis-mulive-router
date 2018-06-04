@@ -25,6 +25,7 @@
 #   unused-packages = true
 
 
+
 [[constraint]]
   name = "github.com/BurntSushi/toml"
   version = "0.3.0"
@@ -34,9 +35,6 @@
   name = "github.com/garyburd/redigo"
   version = "1.6.0"
 
-[[constraint]]
-  name = "github.com/spinlock/jemalloc-go"
-  version = "4.5.0"
 
 [[constraint]]
   name = "github.com/docopt/docopt-go"
@@ -51,5 +49,4 @@
   revision = "fe605b5cd210047ae3bb73d2b69a5b912a9b423d"
 
 [prune]
-  go-tests = true
   unused-packages = true

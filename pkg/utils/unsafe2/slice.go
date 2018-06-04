@@ -3,7 +3,9 @@
 
 package unsafe2
 
-import "github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
+import (
+	"github.com/emphant/redis-mulive-router/pkg/utils/sync2/atomic2"
+)
 
 type Slice interface {
 	Type() string

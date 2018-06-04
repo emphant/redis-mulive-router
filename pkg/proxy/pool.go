@@ -320,7 +320,6 @@ func (bc *BackendConn) delayBeforeRetry() {//MARK 至少重试10次，50ms*2 50m
 
 func (bc *BackendConn) loopWriter(round int) (err error) {
 	defer func() {
-		log.Println("xx")
 		for i := len(bc.input); i != 0; i-- {
 			r := <-bc.input
 			bc.setResponse(r, nil, ErrBackendConnReset)

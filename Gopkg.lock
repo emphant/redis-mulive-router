@@ -51,11 +51,7 @@
   packages = ["."]
   revision = "4e1c5567d7c2dd59fa4c7c83d34c2f3528b025d6"
 
-[[projects]]
-  name = "github.com/spinlock/jemalloc-go"
-  packages = ["."]
-  revision = "8b985c7ab89f3f0388caf49bbbaa6a156a9175b5"
-  version = "4.5.0"
+
 
 [[projects]]
   branch = "master"
@@ -66,6 +62,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "42fd80da1cc86e9cc7d296cde5fcd5bfed6ef0ebde0f31643d8bc55cab5e2e58"
+  inputs-digest = "dd46a13c0d936e44e30c1f6ffba62d3a1768381301abf645e62d662183d5d532"
   solver-name = "gps-cdcl"
   solver-version = 1
