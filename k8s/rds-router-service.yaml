@@ -6,11 +6,15 @@ metadata:
     app: rds-router
   namespace: emphant
 spec:
+  type: NodePort
   ports:
-    # the port that this service should serve on
   - port: 29000
+    name: router
     targetPort: 29000
+    nodePort: 29000
   - port: 21080
+    name: admin
     targetPort: 21080
+    nodePort: 21080
   selector:
     app: rds-router

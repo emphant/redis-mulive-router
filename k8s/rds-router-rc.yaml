@@ -3,7 +3,6 @@ kind: ReplicationController
 metadata:
   name: rds-router
   namespace: emphant
-  version: 1.0
 spec:
   replicas: 3
   template:
@@ -24,10 +23,10 @@ spec:
         imagePullPolicy: Never
         command:
         - rds-router
-        - -c /data/router.toml
+        - --config=/data/router.toml
         ports:
         - containerPort: 29000
         - containerPort: 21080
         volumeMounts:
         - name: "rds-router-data"
-          mountPath: "/data
+          mountPath: "/data"
