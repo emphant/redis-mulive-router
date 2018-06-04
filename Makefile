@@ -1,14 +1,14 @@
 #can not exist space
 cp-deps:
 	@mkdir -p bin config
-	@make --no-print-directory -C vendor/github.com/spinlock/jemalloc-go/
 build: cp-deps
-	go build -i  -o bin/rdslive-router ./cmd/proxy
-	@./bin/rdslive-router --default-config > config/router.toml
+	go build -i -o bin/rds-router ./cmd/proxy
+	@./bin/rds-router --default-config > config/router.toml
 image:build
 	docker build --force-rm -t $(REGISTY)/$(PRODUCT):$(VERSION) .
-clean:
+distclean:
 	@rm -rf bin
-distclean: clean
-	@make --no-print-directory --quiet -C vendor/github.com/spinlock/jemalloc-go/ distclean
+install:
+	@cp bin/rds-router /usr/bin
+	@cp config/router.toml /etc
 .PHONY:build
