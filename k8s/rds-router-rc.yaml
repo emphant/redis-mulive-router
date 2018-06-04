@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: ReplicationController
+metadata:
+  name: rds-router
+  namespace: emphant
+  version: 1.0
+spec:
+  replicas: 3
+  template:
+    metadata:
+      labels:
+        app: rds-router
+    spec:
+      volumes:
+      - name: "rds-router-data"
+        hostPath:
+          path: "/emphant/data/rds-router"
+      containers:
+      - name: rds-router
+        image: reg.emphant.com:5000/rds-router:1.0
+        env:
+        - name: TZ
+          value: Asia/Shanghai
+        imagePullPolicy: Never
+        command:
+        - rds-router
+        - -c /data/router.toml
+        ports:
+        - containerPort: 29000
+        - containerPort: 21080
+        volumeMounts:
+        - name: "rds-router-data"
+          mountPath: "/data
