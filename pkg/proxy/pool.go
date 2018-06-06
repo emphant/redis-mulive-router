@@ -369,7 +369,7 @@ func (bc *BackendConn) loopWriter(round int) (err error) {
 }
 
 
-type SharedBackendConn struct {
+type  SharedBackendConn struct {
 	addr string
 	host []byte
 	port []byte

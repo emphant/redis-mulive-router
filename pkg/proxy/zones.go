@@ -14,8 +14,12 @@ type Zone struct {
 	}
 	backend struct {
 		id int
+		lock sync.Mutex
 		bc *SharedBackendConn
 	}
+	isSentinelMode bool
+	addrs []string
+	masterName string //
 	prefix string //区域标识前缀
 	//method forwardMethod // 应该所有的都需要支持
 }
@@ -36,6 +40,14 @@ func (z *Zone) Forward(r *Request) error {
 	return nil
 }
 
+func (z *Zone) ChangeConn(conn *SharedBackendConn)  {
+	z.backend.lock.Lock()
+	defer z.backend.lock.Unlock()
+	z.backend.bc = conn
+}
+
+
+
 func (z *Zone) ForwardAsync(r *Request) error {
 	z.lock.RLock()
 	bc, err := z.process(z, r)
@@ -50,12 +62,12 @@ func (z *Zone) ForwardAsync(r *Request) error {
 func (z *Zone) snapshot() *models.Zone {
 	var m = &models.Zone{
 		Prefix:z.prefix,
-		Addr: z.backend.bc.Addr(),
+		Addrs: z.backend.bc.Addr(),
 	}
 	return m
 }
 
-func NewZone(id int, conn *SharedBackendConn,prefix string) *Zone {
+func NewZone(id int, conn *SharedBackendConn,prefix string,isSentinel bool,addrs []string,masterName string) *Zone {
 	z := &Zone{}
 	z.id=id
 	z.lock.hold=false
@@ -63,6 +75,9 @@ func NewZone(id int, conn *SharedBackendConn,prefix string) *Zone {
 	z.backend.id=id
 	z.backend.bc=conn
 	z.prefix=prefix
+	z.isSentinelMode=isSentinel
+	z.addrs=addrs
+	z.masterName=masterName
 	return z
 }
 

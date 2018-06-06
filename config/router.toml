@@ -31,6 +31,8 @@ curr_zone_prefix = "A"
 curr_zone_addr = "172.16.80.2:6379"
 zone_info_key = "RMR_ZONE_INFO"
 zone_spr_4key = "::"
+sentinel_mode = true
+sentinel_switch_period = "5s"
 
 # Set max number of alive sessions.
 proxy_max_clients = 1000

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"runtime"
 	"strconv"
+	"github.com/emphant/redis-mulive-router/pkg/utils/redis"
+	"time"
 )
 
 var (
@@ -16,6 +18,8 @@ var (
 	ErrZoneIsNotMatch = errors.New("the key to write zone is not match curr")
 	ErrClosedRouter  = errors.New("use of closed router")
 	ErrGetconn  = errors.New("poll get addr error,not exist")
+	ErrGetMaster  = errors.New("get master form sentinel error")
+	ErrGetMasterZoro  = errors.New("get no master from sentinel")
 )
 
 // 对请求任务进行分派，选择到对应的数据中心读/写数据
@@ -23,14 +27,16 @@ type Router struct {
 	mu sync.RWMutex
 
 	config *Config
-	zones map[string]*Zone
+	zones map[string]*Zone //应该保存更多的信息
 	pool *SharedBackendConnPool
+
 
 	currentZonePrefix string
 
 	online  bool
 	closed  bool
 	zoneSpr string
+	monitor *redis.Sentinel
 }
 
 func (s *Router) Start() {
@@ -60,17 +66,41 @@ func (router *Router) FillZone(pzones []*models.Zone) error {//完成zone的初�
 	if router.closed {
 		return ErrClosedRouter
 	}
+
 	for _,zone := range pzones {
 		if zone.Prefix==router.currentZonePrefix && router.zones[router.currentZonePrefix]!=nil{
 			continue
 		}
-		conn:=router.pool.Retain(zone.Addr)
-		if nil!=conn {
-			rZone := NewZone(zone.Id,conn,zone.Prefix)
-			router.zones[zone.Prefix]=rZone
+		if zone.IsSentinel {
+			log.Println(zone.GetAddrs())
+			masters,err := router.monitor.Masters(zone.GetAddrs(),time.Second*3)
+			if err!=nil {
+				log.Error(err)
+				return ErrGetMaster
+			}
+			log.Println(masters)
+			if len(masters)==0 {
+				log.Error(ErrGetMasterZoro)
+				return ErrGetMasterZoro
+			}
+			for name,addr :=range masters {
+				if name==zone.MasterName {
+					conn:=router.pool.Retain(addr)
+					rZone := NewZone(zone.Id,conn,zone.Prefix,zone.IsSentinel,zone.GetAddrs(),zone.MasterName)
+					router.zones[zone.Prefix]=rZone
+				}else {
+					router.pool.Retain(addr)
+				}
+			}
 		}else {
-			log.Errorf("pool get %v addr conn error",zone.Addr)
-			return ErrGetconn
+			conn:=router.pool.Retain(zone.Addrs)//TODO modify
+			if nil!=conn {
+				rZone := NewZone(zone.Id,conn,zone.Prefix,zone.IsSentinel,zone.GetAddrs(),zone.MasterName)
+				router.zones[zone.Prefix]=rZone
+			}else {
+				log.Errorf("pool get %v addr conn error",zone.GetAddrs())
+				return ErrGetconn
+			}
 		}
 	}
 	return nil
@@ -97,6 +127,35 @@ func (router *Router) KeepAlive() error{//保持连接池在线
 		return ErrClosedRouter
 	}
 	router.pool.KeepAlive()
+	return nil
+}
+
+
+
+func (router *Router) SentinelSwitch() error{//哨兵工作模式下持续选择master
+	router.mu.RLock()
+	defer router.mu.RUnlock()
+	if router.closed {
+		return ErrClosedRouter
+	}
+	for _,zone := range router.zones {
+		if zone.isSentinelMode{
+			//TODO use goroutine | chan
+			masters,err := router.monitor.Masters(zone.addrs,time.Second*3)
+			log.Printf("ENTER ing SentinelSwitch %s \n",masters)
+			masterAddr,ok := masters[zone.masterName]
+			if err!=nil || !ok {
+				log.Errorf("[SentinelSwitch] get Masters %s and get by name not found ",err,ok)
+				return err
+			}
+			//TODO ok,err
+			if zone.backend.bc.addr != masterAddr{
+				conn := router.pool.Retain(masterAddr)
+				zone.ChangeConn(conn)
+				//TODO 是否release 旧链接
+			}
+		}
+	}
 	return nil
 }
 
@@ -254,19 +313,29 @@ func loadZoneInfo(z *Zone,key string) ( []*models.Zone, error) {
 
 func NewRouter(config *Config)  *Router{
 	s := &Router{config: config}
-	s.pool = NewSharedBackendConnPool(config, config.BackendPrimaryParallel)
-	s.zones = make(map[string]*Zone)
 
 	s.currentZonePrefix=config.CurrZonePrefix
 	s.zoneSpr = config.ZoneSpr4key
 
+	if config.SentinelMode {
+		monitor := redis.NewSentinel(config.ProductName, config.ProductAuth)
+		s.monitor=monitor
+
+		//go
+		//go
+	}
+
+	s.pool = NewSharedBackendConnPool(config, config.BackendPrimaryParallel)
+	s.zones = make(map[string]*Zone)
+
 	log.Println("called")
-	zonemA := models.Zone{1,config.CurrZoneAddr,config.CurrZonePrefix}
+	zonemA := models.Zone{1,config.CurrZoneAddr,config.CurrZonePrefix,config.SentinelMode,"mymaster"}
 	s.FillZone([]*models.Zone{&zonemA})
 
 
 	realZone := s.zones[config.CurrZonePrefix]
 	zones,err := loadZoneInfo(realZone,config.ZoneInfoKey)
+
 	log.Println(len(zones))
 	if err==nil {
 		s.FillZone(zones)

@@ -6,7 +6,6 @@ import (
 	//"os"
 	"time"
 	"strconv"
-	"github.com/emphant/redis-mulive-router/pkg/utils/log"
 )
 //TODO merge URL.path 到主干分支
 
@@ -42,9 +41,29 @@ func main() {
 	//fmt.Println(r)
 	//defer_call()
 
-	var b []byte = nil
+	//var b []byte = nil
+	//
+	//log.Println(string(b))
+	//v := mySqrt(1)
+	//math.Sqrt(10)
+	//fmt.Printf("return is %s",v)
+	image := [][]int{{1,1,1},{1,1,0},{1,0,1}}
+	print2D(image)
+	sr := 1
+	sc := 1
+	newColor := 2
+	arr := floodFill(image,sr,sc,newColor)
+	fmt.Println(arr)
+	print2D(arr)
 
-	log.Println(string(b))
+}
+func print2D(arr [][]int){
+	for _,y := range arr{
+		for _,j := range y  {
+			fmt.Printf("\t%d",j)
+		}
+		fmt.Print("\n")
+	}
 }
 
 type Point struct {
@@ -107,3 +126,51 @@ func EmpByID(id int) *Employee{
 }
 
 //EmpByID(10).Name="fefe"
+
+
+func mySqrt(x int) int {
+	return gsq(x,x,0)
+}
+func gsq(x int,start int,end int) int {
+	half := (start+end)/2
+	if half*half<x {
+		if start==end {
+			return start
+		}else if (half+1)*(half+1)>x {
+			return half
+		}else if (half+1)*(half+1)==x {
+			return half+1
+		}else {
+			return gsq(x,start,half)
+		}
+	}else if half*half==x{
+		return half
+	}else {
+		return gsq(x,half,0)
+	}
+}
+
+func floodFill(image [][]int, sr int, sc int, newColor int) [][]int {
+	if image[sr][sc]==newColor {
+		return image
+	}
+	oldColor:=image[sr][sc]
+	rlen := len(image)
+	clen := len(image[0])
+	floodFill2(image[:][:],sr,sc,rlen,clen,oldColor,newColor)
+	return image[:][:]
+}
+
+func floodFill2(image [][]int, sr , sc ,rn ,cn ,oldColor, newColor int)  {
+	if sr<0 || sr >=rn || sc<0 || sc >=cn {
+		return
+	}
+	if image[sr][sc] != oldColor {
+		return
+	}
+	image[sr][sc]=newColor
+	floodFill2(image[:][:],sr+1,sc,rn,cn,oldColor,newColor)
+	floodFill2(image[:][:],sr,sc+1,rn,cn,oldColor,newColor)
+	floodFill2(image[:][:],sr-1,sc,rn,cn,oldColor,newColor)
+	floodFill2(image[:][:],sr,sc-1,rn,cn,oldColor,newColor)
+}

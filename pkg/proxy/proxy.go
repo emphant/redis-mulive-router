@@ -73,6 +73,12 @@ func (s *Proxy) serveProxy() {//启动代理tcp服务
 		go s.keepAlive(d)
 	}
 
+	if s.config.SentinelMode {
+		if sd := s.config.SentinelSwitchPeriod.Duration(); sd != 0 {
+			go s.sentinelSwitch(sd)
+		}
+	}
+
 	select {
 	case <-s.exit.C:
 		log.Warnf("[%p] proxy shutdown", s)
@@ -219,6 +225,19 @@ func (s *Proxy) keepAlive(d time.Duration) {
 			return
 		case <-ticker.C:
 			s.router.KeepAlive()
+		}
+	}
+}
+
+func (s *Proxy) sentinelSwitch(d time.Duration) {
+	var ticker = time.NewTicker(math2.MaxDuration(d, time.Second))
+	defer ticker.Stop()
+	for {
+		select {
+		case <-s.exit.C:
+			return
+		case <-ticker.C:
+			s.router.SentinelSwitch()
 		}
 	}
 }
