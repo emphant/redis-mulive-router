@@ -49,6 +49,7 @@ zone_info_key = "RMR_ZONE_INFO"
 zone_spr_4key = "::"
 sentinel_mode = true
 sentinel_switch_period = "5s"
+sentinel_switch_timeout = "3s"
 
 # Set max number of alive sessions.
 proxy_max_clients = 1000
@@ -132,6 +133,7 @@ type Config struct {
 	ZoneSpr4key  string `toml:"zone_spr_4key" json:"zone_spr_4key"`
 	SentinelMode     bool              `toml:"sentinel_mode" json:"sentinel_mode"`
 	SentinelSwitchPeriod      timesize.Duration `toml:"sentinel_switch_period" json:"sentinel_switch_period"`
+	SentinelSwitchTimeout      timesize.Duration `toml:"sentinel_switch_timeout" json:"sentinel_switch_timeout"`
 
 	BackendPingPeriod      timesize.Duration `toml:"backend_ping_period" json:"backend_ping_period"`
 	BackendRecvBufsize     bytesize.Int64    `toml:"backend_recv_bufsize" json:"backend_recv_bufsize"`
@@ -209,6 +211,9 @@ func (c *Config) Validate() error {
 		return errors.New("invalid proxy_heap_placeholder")
 	}
 	if c.SentinelSwitchPeriod < 0 {
+		return errors.New("invalid sentinel_switch_period")
+	}
+	if c.SentinelSwitchTimeout < 0 {
 		return errors.New("invalid sentinel_switch_period")
 	}
 

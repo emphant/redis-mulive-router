@@ -43,6 +43,7 @@ func (z *Zone) Forward(r *Request) error {
 func (z *Zone) ChangeConn(conn *SharedBackendConn)  {
 	z.backend.lock.Lock()
 	defer z.backend.lock.Unlock()
+	z.backend.bc.Release()
 	z.backend.bc = conn
 }
 

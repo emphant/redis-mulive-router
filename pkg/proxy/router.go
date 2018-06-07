@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"github.com/emphant/redis-mulive-router/pkg/utils/redis"
-	"time"
 )
 
 var (
@@ -72,8 +71,9 @@ func (router *Router) FillZone(pzones []*models.Zone) error {//完成zone的初�
 			continue
 		}
 		if zone.IsSentinel {
+			log.Info(zone)
 			log.Println(zone.GetAddrs())
-			masters,err := router.monitor.Masters(zone.GetAddrs(),time.Second*3)
+			masters,err := router.monitor.Masters(zone.GetAddrs(),router.config.SentinelSwitchTimeout.Duration())
 			if err!=nil {
 				log.Error(err)
 				return ErrGetMaster
@@ -112,8 +112,13 @@ func (router *Router) Close() {//关闭
 	if router.closed {
 		return
 	}
+	for _,zone := range router.zones {
+		zone.backend.bc.Release()
+		zone.backend.bc = nil
+		zone.backend.id = 0
+	}
+	router.zones=nil
 	router.closed = true
-	//TODO release zone
 }
 
 func (router *Router) isOnline() bool {
@@ -140,19 +145,17 @@ func (router *Router) SentinelSwitch() error{//哨兵工作模式下持续选择
 	}
 	for _,zone := range router.zones {
 		if zone.isSentinelMode{
-			//TODO use goroutine | chan
-			masters,err := router.monitor.Masters(zone.addrs,time.Second*3)
-			log.Printf("ENTER ing SentinelSwitch %s \n",masters)
+			masters,err := router.monitor.Masters(zone.addrs,router.config.SentinelSwitchTimeout.Duration())
+			//log.Info("ENTER ing SentinelSwitch %s \n",masters)
 			masterAddr,ok := masters[zone.masterName]
 			if err!=nil || !ok {
 				log.Errorf("[SentinelSwitch] get Masters %s and get by name not found ",err,ok)
 				return err
 			}
-			//TODO ok,err
-			if zone.backend.bc.addr != masterAddr{
+			oldAddr := zone.backend.bc.addr
+			if oldAddr != masterAddr{
 				conn := router.pool.Retain(masterAddr)
 				zone.ChangeConn(conn)
-				//TODO 是否release 旧链接
 			}
 		}
 	}
