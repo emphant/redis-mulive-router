@@ -7,9 +7,9 @@ import (
 
 	"golang.org/x/net/context"
 
-	"github.com/CodisLabs/codis/pkg/utils/errors"
 
 	redigo "github.com/garyburd/redigo/redis"
+	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
 )
 
 type Sentinel struct {
