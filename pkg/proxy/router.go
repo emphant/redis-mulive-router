@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"github.com/emphant/redis-mulive-router/pkg/utils/redis"
-	"time"
 )
 
 var (
@@ -234,7 +233,6 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 				realZone := router.zones[zoneInfo]
 				realZone.Forward(r)//失败了就失败了
 				//r.Batch.Wait()
-				log.Println(time.Now())
 				for k := range router.zones{
 					if k== zoneInfo{
 						continue
@@ -245,7 +243,6 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 						otherZone.ForwardAsync(oR)
 					}
 				}
-				log.Println(time.Now())
 				//log.Info("FINISH SET key to local sync and to others async")
 			}else {//同步执行的时候的一致性，一个事务
 				//log.Info("SET key NOT has zone info ,start set to all zones")
