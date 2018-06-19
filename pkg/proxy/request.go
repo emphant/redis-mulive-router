@@ -61,6 +61,24 @@ func (r *Request) MakeSubRequest(n int) []Request {
 	return sub
 }
 
+
+func (r *Request) CPRequest(n int) []Request {
+	var sub = make([]Request, n)
+	for i := range sub {
+		x := &sub[i]
+		x.Batch = &sync.WaitGroup{}
+		x.OpStr = r.OpStr
+		x.OpFlag = r.OpFlag
+		x.Database = r.Database
+		x.UnixNano = r.UnixNano
+		x.Multi = make([]*redis.Resp,len(r.Multi))
+		for index,v := range r.Multi{
+			x.Multi[index]=v
+		}
+	}
+	return sub
+}
+
 const GOLDEN_RATIO_PRIME_32 = 0x9e370001
 
 func (r *Request) Seed16() uint {

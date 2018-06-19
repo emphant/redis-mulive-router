@@ -27,8 +27,8 @@ proxy_addr = "0.0.0.0:29000"
 # Set datacenter of proxy.
 proxy_datacenter = ""
 
-curr_zone_prefix = "A"
-curr_zone_addr = "172.16.80.161:26380,172.16.80.162:26380,172.16.80.163:26380"
+curr_zone_prefix = "B"
+curr_zone_addr = "172.16.80.167:26380,172.16.80.168:26380,172.16.80.169:26380"
 zone_info_key = "RMR_ZONE_INFO"
 zone_spr_4key = "::"
 sentinel_mode = true
