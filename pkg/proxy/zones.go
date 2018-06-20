@@ -64,6 +64,8 @@ func (z *Zone) snapshot() *models.Zone {
 	var m = &models.Zone{
 		Prefix:z.prefix,
 		Addrs: z.backend.bc.Addr(),
+		IsSentinel:z.isSentinelMode,
+		MasterName:z.masterName,
 	}
 	return m
 }
