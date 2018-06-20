@@ -251,11 +251,11 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 					var trancmpt *SetRedisTrx
 					if k==router.currentZonePrefix {//如果为当前区域则直接使用当前req
 						zone := v
-						trancmpt = &SetRedisTrx{Zone:zone,Req:r}
+						trancmpt = &SetRedisTrx{Zone:zone,flag:false,Req:r}
 					}else {
 						zone := v
-						req := r.MakeSubRequest(1)
-						trancmpt = &SetRedisTrx{Zone:zone,Req:&req[0]}
+						req := r.CPRequest(1)
+						trancmpt = &SetRedisTrx{Zone:zone,flag:false,Req:&req[0]}
 					}
 					transaction.Prepare(trancmpt)
 				}

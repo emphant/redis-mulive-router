@@ -2,11 +2,14 @@ package proxy
 
 import (
 	"github.com/emphant/redis-mulive-router/pkg/utils/errors"
+	"github.com/emphant/redis-mulive-router/pkg/utils/log"
+	"runtime"
 )
 
 var (
 	ErrTransCommit = errors.New("the trancsaction compants to commit not equal all")
 	ErrTransCmptCheck = errors.New("one trancsaction compant check error")
+	ErrTransCmptExec = errors.New("one trancsaction compant exec error")
 )
 
 type Transaction struct{
@@ -22,20 +25,34 @@ func (t *Transaction)  Prepare(tran TrxCompants)  {
 	t.trans = append(t.trans,tran)
 }
 
-
-func (t *Transaction)  Exec()  error{
-	defer func() {
-
+func (t *Transaction)  Exec() (err2 error){
+	defer func() {//defer 防止出现panic,并打印栈
+		if err := recover(); err != nil {
+			var buf [8192]byte
+			n := runtime.Stack(buf[:],false)
+			log.Errorf("Commit PANIC_ERROR %v %v",err,string(buf[:n]))
+			err2 = ErrTransCmptExec
+		}
 	}()
-	//TODO 并发/依次执行
 	for i := 0; i < len(t.trans); i++{
-		t.trans[i].Exec()
+		err:=t.trans[i].Exec()
+		if err != nil {
+			return err
+		}
 		t.execed=append(t.execed,t.trans[i])
 	}
 	return nil
 }
 
-func (t *Transaction)  Commit()  error{
+func (t *Transaction)  Commit()  (err2 error){
+	defer func() {//defer 防止出现panic,并打印栈
+		if err := recover(); err != nil {
+			var buf [8192]byte
+			n := runtime.Stack(buf[:],false)
+			log.Errorf("Commit PANIC_ERROR %v %v",err,string(buf[:n]))
+			err2 = ErrTransCmptCheck
+		}
+	}()
 	if len(t.execed) != len(t.trans){
 		return ErrTransCommit
 	}
@@ -46,7 +63,7 @@ func (t *Transaction)  Commit()  error{
 		}
 	}
 	// 出error了
-	return nil
+	return
 }
 
 func (t *Transaction)  Rollback()  {
@@ -67,10 +84,19 @@ type SetRedisTrx struct {
 	Zone *Zone
 	flag bool
 	Req *Request
+	oldV string
 }
 
 func (trxc *SetRedisTrx) Exec()  error{
-	err := trxc.Zone.Forward(trxc.Req)
+	//find old data use for rollback
+	greq := GetRequest(trxc.Req.getKey())
+	err:=trxc.Zone.Forward(greq)
+	if err!=nil {
+		return err
+	}
+	greq.Batch.Wait();
+	trxc.oldV=string(greq.Resp.Value)
+	err = trxc.Zone.Forward(trxc.Req)
 	return err
 }
 
@@ -86,7 +112,13 @@ func (trxc *SetRedisTrx) Check() bool {
 
 func (trxc *SetRedisTrx) Rollback() {
 	//执行不用等待执行结果的即可
-	delr := DELRequest(trxc.Req.getKey())
-	trxc.Zone.Forward(delr)
-	delr.Batch.Wait()
+	if trxc.oldV!="" {
+		setr := SetRequest(trxc.Req.getKey(),trxc.oldV,-1)//has no ttl
+		trxc.Zone.Forward(setr)
+		setr.Batch.Wait()
+	}else {
+		delr := DELRequest(trxc.Req.getKey())
+		trxc.Zone.Forward(delr)
+		delr.Batch.Wait()
+	}
 }
