@@ -334,7 +334,7 @@ func NewRouter(config *Config)  *Router{
 	s.zones = make(map[string]*Zone)
 
 	log.Println("called")
-	zonemA := models.Zone{1,config.CurrZoneAddr,config.CurrZonePrefix,config.SentinelMode,"mymaster"}
+	zonemA := models.Zone{1,config.CurrZoneAddr,config.CurrZonePrefix,config.SentinelMode,"mymaster",false}
 	s.FillZone([]*models.Zone{&zonemA})
 
 

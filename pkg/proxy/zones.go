@@ -66,6 +66,7 @@ func (z *Zone) snapshot() *models.Zone {
 		Addrs: z.backend.bc.Addr(),
 		IsSentinel:z.isSentinelMode,
 		MasterName:z.masterName,
+		IsConnected:z.backend.bc.BackendConn(0, 0, true).IsConnected(),
 	}
 	return m
 }

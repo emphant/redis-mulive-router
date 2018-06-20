@@ -11,6 +11,7 @@ type Zone struct {
 	Prefix string	`json:"prefix"`
 	IsSentinel bool	`json:"is_sentinel"`
 	MasterName string	`json:"master_name"`
+	IsConnected bool	`json:"is_connected,omitempty"`
 }
 func (z *Zone) Encode() []byte {
 	return jsonEncode(z)
