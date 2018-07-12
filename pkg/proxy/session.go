@@ -195,7 +195,6 @@ func (s *Session) loopWriter(tasks *RequestChan) (err error) {//处理完成后�
 
 
 func (s *Session) handleRequest(r *Request, d *Router) error {//视情况看是否需要路由转发
-	//TODO 包含认证、读、写等方法
 	opstr, flag, err := getOpInfo(r.Multi)
 	if err != nil {
 		return err
@@ -204,7 +203,7 @@ func (s *Session) handleRequest(r *Request, d *Router) error {//视情况看是�
 	r.OpFlag = flag
 	r.Broken = &s.broken
 
-	if flag.IsNotAllowed() {//TODO 修改
+	if flag.IsNotAllowed() {
 		return fmt.Errorf("command '%s' is not allowed", opstr)
 	}
 	return d.dispatch(r)

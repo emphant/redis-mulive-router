@@ -93,7 +93,7 @@ func (router *Router) FillZone(pzones []*models.Zone) error {//完成zone的初�
 				}
 			}
 		}else {
-			conn:=router.pool.Retain(zone.Addrs)//TODO modify
+			conn:=router.pool.Retain(zone.Addrs)
 			if nil!=conn {
 				rZone := NewZone(zone.Id,conn,zone.Prefix,zone.IsSentinel,zone.GetAddrs(),zone.MasterName)
 				router.zones[zone.Prefix]=rZone
@@ -179,7 +179,6 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 			defer router.mu.RUnlock()
 			// get zone from prefix
 			z.Forward(r) //数据库字段，此部分在这需要强制阻塞住执行获取结果
-			//TODO timeout 异常
 			r.Batch.Wait() // 与上步操作合并，并在req中增加值execed
 			val:=string(r.Resp.Value)
 			log.Debugf("ENTER GET  key is %v value is %v",getKey,val)

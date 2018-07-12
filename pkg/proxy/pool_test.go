@@ -94,7 +94,6 @@ func TestItoa(t *testing.T) {
 	fmt.Printf("resp is %v",string(req.Resp.Value))
 
 
-	//TODO 测试sleep状态下的server断开情况
 	time.Sleep(1000* time.Second)
 }
 

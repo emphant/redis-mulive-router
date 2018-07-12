@@ -47,14 +47,19 @@ func main() {
 	//v := mySqrt(1)
 	//math.Sqrt(10)
 	//fmt.Printf("return is %s",v)
-	image := [][]int{{1,1,1},{1,1,0},{1,0,1}}
-	print2D(image)
-	sr := 1
-	sc := 1
-	newColor := 2
-	arr := floodFill(image,sr,sc,newColor)
-	fmt.Println(arr)
-	print2D(arr)
+	//image := [][]int{{1,1,1},{1,1,0},{1,0,1}}
+	//x2 := []int{2,3}
+	//de
+	//print2D(image)
+	//sr := 1
+	//sc := 1
+	//newColor := 2
+	//arr := floodFill(image,sr,sc,newColor)
+	//fmt.Println(arr)
+	//print2D(arr)
+
+	x := 5
+	fmt.Println(^x)
 
 }
 func print2D(arr [][]int){
