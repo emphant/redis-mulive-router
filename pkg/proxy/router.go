@@ -239,7 +239,7 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 						//oR := r
 						oR := &r.CPRequest(1)[0]
 						otherZone := router.zones[k]
-						otherZone.ForwardAsync(oR)
+						otherZone.ForwardAsync(oR)//审慎
 					}
 				}
 				//log.Info("FINISH SET key to local sync and to others async")
@@ -278,7 +278,7 @@ func (router *Router) dispatch(r *Request) error{//依照req转发到相应zone
 		router.mu.RLock()
 		defer router.mu.RUnlock()
 		// get zone from prefix
-		return z.Forward(r) //数据库字段，此部分在这需要强制阻塞住执行获取结果
+		return z.Forward(r)
 	}
 }
 
